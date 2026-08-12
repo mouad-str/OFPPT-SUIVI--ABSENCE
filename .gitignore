@@ -1,0 +1,16 @@
+node_modules/
+.env
+dist/
+build/
+.DS_Store
+*.log
+.vscode/
+.idea/
+server/node_modules/
+client/node_modules/
+client/dist/
+server/uploads/
+
+scratch/
+server/scratch/
+server/tests/
