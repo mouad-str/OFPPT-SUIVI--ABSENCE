@@ -1,103 +1,213 @@
-# OFPPT Smart Attendance System 🎓
+<div align="center">
 
-## 📖 Project Overview
-The **OFPPT Smart Attendance System** is a modern, comprehensive digital solution designed to streamline attendance tracking and administrative management within OFPPT (Office de la Formation Professionnelle et de la Promotion du Travail) institutes.
+  <img src="client/src/assets/OFPPT.png" alt="OFPPT Logo" width="120" />
 
-The primary purpose of this project is to replace traditional paper-based attendance methods with a fast, reliable, and automated system. It features specialized login interfaces and workflows for both Admins and Formateurs (instructors), leveraging modern web technologies and QR Code hardware integration to minimize administrative overhead and provide real-time visibility for the administration.
+  # 🎓 OFPPT Smart Attendance System
+  ### *Système Intelligent de Gestion et Suivi des Absences - ISTA Mirleft*
 
-## 👥 Team Member Contributions
+  [![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+  [![NodeJS](https://img.shields.io/badge/Backend-Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+  [![Express](https://img.shields.io/badge/Framework-Express.js-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+  [![MySQL](https://img.shields.io/badge/Database-MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+  [![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
-This project was built collaboratively. Below is the breakdown of tasks handled by each team member:
+  <p align="center">
+    Un système web moderne, performant et automatisé de suivi d'assiduité par <b>QR Code</b> conçu pour les établissements de l'<b>OFPPT</b>.
+  </p>
 
-### Moaad
-- **Table Board:** Developed the core tables for data presentation and management.
-- **Numbers Page:** Built the statistical overviews and numerical data dashboards.
-- **Filters Page:** Implemented advanced filtering functionality to sort and search attendance data efficiently.
-- **Classes Page:** Designed and built the interface for managing and viewing class details.
+  [Fonctionnalités](#-fonctionnalités-clés) •
+  [Architecture](#-architecture--stack-technologique) •
+  [Installation](#-guide-dinstallation) •
+  [L'Équipe](#-contribution-de-léquipe)
 
-### Bilal
-- **Group Page:** Created the interface for handling student groups.
-- **Report Page:** Developed the comprehensive reporting module for attendance records.
-- **Registering Absence:** Implemented the core logic and UI for marking and tracking student absences.
-- **Profile Page:** Built the user profile pages for personalized settings and details.
-
-### Saif
-- **Admin Pages:** Spearheaded the creation of all administrative dashboards and management pages.
-- **QR Scanning Integration:** Implemented the hardware/software integration for automated attendance via QR code scanning.
-- **Building Features:** Developed architectural and core system features to ensure scalability and robustness.
-
-## 🛠 Tech Stack & Functionality Overview
-
-The application utilizes a robust modern technology stack to handle both the admin and formateur workflows efficiently.
-
-- **Frontend:** Built with **React.js** and **Vite** for a fast, responsive user interface. Styled using **Tailwind CSS** and **Lucide Icons** for a modern, clean design. State management and routing are handled via core React ecosystem tools and **react-router-dom**.
-- **Backend:** Powered by **Node.js** and **Express.js**, providing secure and scalable RESTful APIs. Authentication is secured using JWT.
-- **Database:** Relational data is managed using **MySQL**, ensuring data integrity for users, classes, and attendance logs.
-- **Special Integrations:** 
-  - **html5-qrcode** for frontend QR scanning capabilities.
-  - Custom file processing using **multer** and **xlsx** for data import/export.
+</div>
 
 ---
 
-## 👩‍💻 Project Setup Instructions
+## 🌟 Aperçu du Projet
 
-Follow these steps carefully to set up the project on your local machine.
+Le **Système Intelligent de Gestion des Absences OFPPT** est une plateforme Web moderne développée pour digitaliser et automatiser le suivi du taux de présence au sein de l'établissement **ISTA Mirleft**. 
 
-### Prerequisites
-Before you start, ensure you have the following installed on your system:
-1. **Node.js:** v18 or higher (Download from [nodejs.org](https://nodejs.org/)).
-2. **MySQL:** XAMPP, WAMP, or standalone MySQL server.
+En remplaçant la prise de présence traditionnelle sur papier par la **détection QR Code** et des **tableaux de bord analytiques en temps réel**, la solution réduit la charge administrative, prévient la perte de données et offre une visibilité globale instantanée aux formateurs et administrateurs.
 
-### Step 1: Clone and Setup
-Clone the repository to your local machine:
-```bash
-git clone <repository_url>
-cd OFPPT-Smart-Attendance
+---
+
+## ✨ Fonctionnalités Clés
+
+### 👨‍💼 Espace Administration
+- 📊 **Tableau de Bord Exécutif :** Vue d'ensemble avec statistiques en temps réel (taux de présence global, évolution hebdomadaire/mensuelle, distribution des présences, tendances).
+- 🚨 **Surveillance des Absences Critiques :** Alertes automatiques et détection des récidives pour les stagiaires dépassant le seuil autorisé.
+- ⚡ **Barre d'Actions Rapides :** Accès direct à l'ajout de formateurs, gestion des filières, registres et rapports.
+- 🏢 **Gestion Stratégique :**
+  - **Filières & Salles :** Création, modification et affectation des espaces et formations.
+  - **Groupes & Formateurs :** Superviseurs affectés par groupe, effectifs de stagiaires.
+  - **Comptes Utilisateurs :** Gestion centralisée avec génération automatique de badges & QR codes.
+- 📋 **Registre Centralisé des Absences :** Filtrage avancé (statut, justification, groupe, date), justification en un clic et prise de sanctions disciplinaires.
+- 📥 **Export de Rapports :** Exportation des bilans statistiques et registres au format CSV/Excel.
+
+### 👨‍🏫 Espace Formateur
+- 📱 **Scanner QR Code en Temps Réel :** Prise de présence instantanée via caméra Web / smartphone.
+- 📝 **Saisie et Envoi de Rapports :** Validation de présence par séance, module et groupe.
+- 📁 **Dossier de Groupe :** Consultation des profils de stagiaires, historiques d'absences et relevés.
+- 🔒 **Mise à jour Obligatoire de Mot de Passe :** Sécurisation renforcée des accès lors de la première connexion.
+
+### 🌐 Ergonomie & Accessibilité
+- 🌓 **Mode Sombre / Clair (Dark Mode) :** Persistance automatique du thème préféré.
+- 🌐 **Support Multilingue (FR / AR) :** Support natif du Français et de l'Arabe (RTL layout).
+- 📱 **Design Modern & Responsive :** Interface fluide adaptée aux écrans desktop, tablettes et mobiles.
+
+---
+
+## 🛠 Architecture & Stack Technologique
+
+```mermaid
+graph TD
+    User([Utilisateur: Admin / Formateur]) <--> Client[Client React 18 + Vite]
+    Client <--> API[API REST Express.js / Node.js]
+    API <--> DB[(Base de données MySQL)]
+    API <--> PyQR[Générateur QR Python]
 ```
 
-### Step 2: Database Initialization
-1. Start your MySQL server.
-2. Create your database (e.g., `ofppt_attendance`).
-3. Import the required `.sql` schema (e.g., `server/ofppt_attendance.sql` if available) into your MySQL database to build the tables and insert initial credentials.
-4. Navigate to the server folder and configure your environment variables:
-   - Create a `.env` file in the `/server` directory:
-     ```env
-     PORT=5000
-     DB_HOST=localhost
-     DB_USER=root
-     DB_PASSWORD=
-     DB_NAME=ofppt_attendance
-     JWT_SECRET=supersecretkey123
-     ```
+### 💻 Technologies Utilisées
 
-### Step 3: Install Dependencies
-You need to install packages for the backend and frontend separately.
+| Domaines | Technologies |
+|---|---|
+| **Frontend** | React 18, Vite, React Router v6, Lucide Icons, Recharts, i18next (FR/AR) |
+| **Backend** | Node.js, Express.js, JWT (JSON Web Tokens), bcryptjs |
+| **Base de Données** | MySQL / MariaDB (Connection Pool, Transactions SQL) |
+| **Outillage QR** | Frontend: `html5-qrcode` \| Backend: Python `generate_qr.py` |
+| **Style & UI** | CSS3 (Variables, Glassmorphism, Animations, Dark Mode), Vanilla UI components |
 
-**Backend (`/server`):**
+---
+
+## 👥 Contribution de l'Équipe
+
+Ce projet a été conçu et réalisé en équipe dans le cadre de la modernisation des outils de l'établissement :
+
+| Membre | Contributions Majeures |
+|---|---|
+| 👤 **Mouad** | • Développement des tableaux de données interactifs (`Table Board`)<br>• Module statistiques & chiffres clés (`Numbers Page`)<br>• Système de filtres dynamiques (`Filters Page`)<br>• Interface de gestion des classes & filières |
+| 👤 **Bilal** | • Module de gestion des groupes & effectifs (`Group Page`)<br>• Module de génération de rapports (`Report Page`)<br>• Logique métier et UI du registre d'absence (`Registering Absence`)<br>• Pages profil utilisateur et paramètres (`Profile Page`) |
+| 👤 **Saif** | • Architecture globale des dashboards d'administration (`Admin Pages`)<br>• Intégration matérielle & logicielle du scanner QR Code (`QR Scanning`)<br>• Structure globale, sécurité des routes et optimisation du projet |
+
+---
+
+## 🚀 Guide d'Installation
+
+### 📋 Prérequis
+
+S'assurer d'avoir installé sur votre machine :
+- **Node.js** (v18.0 ou supérieur)
+- **MySQL / MariaDB** (via XAMPP, WAMP ou installation autonome)
+- **Python 3.x** (pour le module de génération des QR codes)
+
+---
+
+### 1️⃣ Cloner le Dépôt
+
+```bash
+git clone https://github.com/mouad-str/OFPPT-SUIVI--ABSENCE.git
+cd OFPPT-SUIVI--ABSENCE
+```
+
+---
+
+### 2️⃣ Configuration de la Base de Données
+
+1. Lancez votre serveur **MySQL**.
+2. Créez une nouvelle base de données nommée `ofppt_attendance`.
+3. Importez le fichier SQL de données initiales situé dans `server/ofppt_attendance.sql` ou `server/database.sql` :
+
+```bash
+mysql -u root -p ofppt_attendance < server/ofppt_attendance.sql
+```
+
+---
+
+### 3️⃣ Configuration des Variables d'Environnement
+
+Créez un fichier `.env` dans le dossier `/server` :
+
+```env
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=ofppt_attendance
+JWT_SECRET=ofppt_smart_attendance_secret_key_2026
+```
+
+---
+
+### 4️⃣ Installation des Dépendances & Lancement
+
+#### 🖥️ Backend (Serveur)
 ```bash
 cd server
 npm install
-```
-
-**Frontend (`/client`):**
-```bash
-cd ../client
-npm install
-```
-
-### Step 4: Run the Application
-You will need two separate terminal windows.
-
-**Terminal 1 (Backend):**
-```bash
-cd server
 npm run dev
 ```
+> Le serveur backend démarrera sur **http://localhost:5000**
 
-**Terminal 2 (Frontend):**
+#### 🌐 Frontend (Client)
+Dans un second terminal :
 ```bash
 cd client
+npm install
 npm run dev
 ```
+> L'application client démarrera sur **http://localhost:5173**
 
-The frontend will start at `http://localhost:5173` (depending on Vite configuration) and the backend at `http://localhost:5000`. You can then log in using the respective Admin or Formateur credentials.
+---
+
+## 📁 Structure du Projet
+
+```text
+OFPPT-Smart-Attendance/
+├── client/                     # Application Frontend React
+│   ├── src/
+│   │   ├── assets/             # Logos et images
+│   │   ├── components/         # Modales, cartes et composants UI
+│   │   ├── contexts/           # AuthContext & NotificationContext
+│   │   ├── layouts/            # DashboardLayout (Sidebar & Topbar)
+│   │   ├── pages/
+│   │   │   ├── admin/          # Pages d'administration (Dashboard, Absences, Filière...)
+│   │   │   ├── formateur/      # Pages formateur (Groupes, Scanner, Dossiers...)
+│   │   │   └── Login/          # Page de connexion
+│   │   ├── routes/             # AppRoutes & ProtectedRoute
+│   │   └── services/           # Services API Axios (studentService, reportService...)
+│   └── vite.config.js
+│
+├── server/                     # API Backend Node.js / Express
+│   ├── config/                 # Connexion Base de Données MySQL Pool
+│   ├── controllers/            # Contrôleurs Admin, Formateur & Auth
+│   ├── middlewares/            # Authentification JWT & Gestion d'Erreurs
+│   ├── routes/                 # Définition des Routes API REST
+│   ├── database.sql            # Schéma de base de données
+│   └── generate_qr.py          # Script Python de génération QR Code
+│
+└── README.md                   # Documentation du Projet
+```
+
+---
+
+## 🔒 Sécurité & Bonnes Pratiques
+
+- 🔑 **Mots de passe hachés** avec `bcryptjs`.
+- 🛡️ **Protection des routes** par rôles (`admin`, `formateur`) avec redirection automatique.
+- ⚡ **Interceptor Axios 401 :** Déconnexion et redirection automatique en cas de session expirée.
+- 🔄 **Requêtes MySQL paramétrées** prévenant les injections SQL.
+
+---
+
+## 📄 Licence
+
+Ce projet est développé pour les besoins d'automatisation des instituts **OFPPT**.  
+Distribué sous la licence **MIT**.
+
+---
+
+<div align="center">
+  <sub>Développé avec ❤️ pour l'<b>OFPPT ISTA Mirleft</b></sub>
+</div>
