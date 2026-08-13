@@ -773,10 +773,46 @@ exports.addDisciplinePenalty = async (req, res) => {
             [stagiaireId]
         );
 
-        // Get student's group and update active status
-        const [[student]] = await pool.query('SELECT group_id FROM stagiaires WHERE NumInscription = ?', [stagiaireId]);
+        // Get student's group, name, and email, and update active status
+        const [[student]] = await pool.query('SELECT name, email, group_id FROM stagiaires WHERE NumInscription = ?', [stagiaireId]);
         if (student && student.group_id) {
             await updateGroupActiveStatus(student.group_id);
+        }
+
+        // Send email warning to student
+        if (student) {
+            const sendEmail = require('../utils/mailer');
+            const stEmail = student.email || `${student.name.replace(/\s+/g, '').toLowerCase()}@ofppt-edu.ma`;
+            const blameHtml = `
+                <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 2rem; border-radius: 12px; background: #fff;">
+                    <div style="border-bottom: 2px solid #dc2626; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                        <h2 style="color: #dc2626; margin: 0; font-size: 20px; font-weight: 800;">AVIS DE SANCTION DISCIPLINAIRE</h2>
+                        <p style="color: #6b7280; font-size: 11px; margin: 0.25rem 0 0 0;">OFPPT Smart Attendance System</p>
+                    </div>
+                    <p style="font-size: 14px; font-weight: 700; color: #111;">Bonjour ${student.name},</p>
+                    <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                        Nous vous informons que l'administration de l'établissement a décidé de vous attribuer la sanction disciplinaire suivante :
+                    </p>
+                    <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; padding: 1.25rem; margin: 1.5rem 0; text-align: center;">
+                        <span style="font-size: 20px; font-weight: 900; color: #dc2626; letter-spacing: 0.05em; display: block;">${penalty}</span>
+                        <span style="font-size: 11px; color: #7f1d1d; display: block; margin-top: 0.5rem; font-weight: 700; font-style: italic;">
+                            Motif : ${reason || "Non-respect du règlement intérieur."}
+                        </span>
+                    </div>
+                    <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                        Nous vous rappelons que la présence à l'ensemble des cours et ateliers est obligatoire. En cas de récidive, des mesures d'exclusion définitive seront entamées conformément au règlement intérieur de l'OFPPT.
+                    </p>
+                    <div style="border-top: 1px solid #e5e7eb; padding-top: 1rem; margin-top: 1.5rem; text-align: right;">
+                        <p style="font-size: 12px; font-weight: 700; color: #111; margin: 0;">La Direction</p>
+                        <p style="font-size: 11px; color: #6b7280; margin: 0.25rem 0 0 0;">ISTA Mirleft</p>
+                    </div>
+                </div>
+            `;
+            sendEmail({
+                to: stEmail,
+                subject: `Sanction Disciplinaire - ${penalty} : ${student.name}`,
+                html: blameHtml
+            });
         }
 
         res.json({ message: 'Penalty assigned and status updated to NON JUSTIFIÉ.' });
@@ -1164,7 +1200,7 @@ const updateGroupActiveStatus = async (groupId) => {
 
         // 4. Automated Disciplinary Penalties Check
         const [students] = await pool.query(
-            'SELECT NumInscription, name FROM stagiaires WHERE group_id = ?',
+            'SELECT NumInscription, name, email FROM stagiaires WHERE group_id = ?',
             [groupId]
         );
 
@@ -1202,6 +1238,40 @@ const updateGroupActiveStatus = async (groupId) => {
                     'INSERT INTO suivieDisipline (student_id, penalty_type, date, reason) VALUES (?, ?, CURDATE(), ?)',
                     [st.NumInscription, newBlame, reason]
                 );
+
+                // Send email warning to student
+                const sendEmail = require('../utils/mailer');
+                const stEmail = st.email || `${st.name.replace(/\s+/g, '').toLowerCase()}@ofppt-edu.ma`;
+                const blameHtml = `
+                    <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 2rem; border-radius: 12px; background: #fff;">
+                        <div style="border-bottom: 2px solid #dc2626; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                            <h2 style="color: #dc2626; margin: 0; font-size: 20px; font-weight: 800;">AVIS DE SANCTION DISCIPLINAIRE</h2>
+                            <p style="color: #6b7280; font-size: 11px; margin: 0.25rem 0 0 0;">OFPPT Smart Attendance System</p>
+                        </div>
+                        <p style="font-size: 14px; font-weight: 700; color: #111;">Bonjour ${st.name},</p>
+                        <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                            Nous vous informons qu'en raison de votre taux d'absentéisme élevé, l'administration de l'établissement a le regret de vous attribuer la sanction disciplinaire suivante :
+                        </p>
+                        <div style="background: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; padding: 1.25rem; margin: 1.5rem 0; text-align: center;">
+                            <span style="font-size: 20px; font-weight: 900; color: #dc2626; letter-spacing: 0.05em; display: block;">${newBlame}</span>
+                            <span style="font-size: 11px; color: #7f1d1d; display: block; margin-top: 0.5rem; font-weight: 700; font-style: italic;">
+                                ${reason}
+                            </span>
+                        </div>
+                        <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                            Nous vous rappelons que la présence à l'ensemble des cours et ateliers est obligatoire. En cas de nouvelles absences non justifiées, des mesures d'exclusion définitive seront entamées conformément au règlement intérieur des établissements de l'OFPPT.
+                        </p>
+                        <div style="border-top: 1px solid #e5e7eb; padding-top: 1rem; margin-top: 1.5rem; text-align: right;">
+                            <p style="font-size: 12px; font-weight: 700; color: #111; margin: 0;">La Direction</p>
+                            <p style="font-size: 11px; color: #6b7280; margin: 0.25rem 0 0 0;">ISTA Mirleft</p>
+                        </div>
+                    </div>
+                `;
+                sendEmail({
+                    to: stEmail,
+                    subject: `Sanction Disciplinaire - ${newBlame} : ${st.name}`,
+                    html: blameHtml
+                });
 
                 // Insert notifications for admins
                 const [admins] = await pool.query('SELECT id FROM admins');

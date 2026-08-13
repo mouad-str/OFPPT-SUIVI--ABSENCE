@@ -24,6 +24,11 @@ export const attendanceService = {
     getFormateurSchedule: async () => {
         const response = await api.get('/formateur/schedule');
         return response.data;
+    },
+
+    getCurrentSession: async () => {
+        const response = await api.get('/formateur/current-session');
+        return response.data;
     }
 };
 

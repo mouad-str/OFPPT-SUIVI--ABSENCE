@@ -31,6 +31,56 @@ exports.submitReport = async (req, res) => {
                     'INSERT INTO report_attendance (report_id, student_id, status) VALUES ?',
                     [values]
                 );
+
+                // Send email warning to students marked as ABSENT
+                const absentStagiaires = nonPresentStagiaires.filter(s => s.status === 'ABSENT');
+                if (absentStagiaires.length > 0) {
+                    const studentIds = absentStagiaires.map(s => s.id);
+                    const [studentsInfo] = await pool.query(
+                        'SELECT NumInscription, name, email FROM stagiaires WHERE NumInscription IN (?)',
+                        [studentIds]
+                    );
+                    
+                    const sendEmail = require('../utils/mailer');
+                    for (const st of studentsInfo) {
+                        const mailHtml = `
+                            <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 2rem; border-radius: 12px; background: #fff;">
+                                <div style="border-bottom: 2px solid #ea580c; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                                    <h2 style="color: #ea580c; margin: 0; font-size: 20px; font-weight: 800;">ALERTE ABSENCE - OFPPT ISTA</h2>
+                                    <p style="color: #6b7280; font-size: 11px; margin: 0.25rem 0 0 0;">OFPPT Smart Attendance System</p>
+                                </div>
+                                <p style="font-size: 14px; font-weight: 700; color: #111;">Bonjour ${st.name},</p>
+                                <p style="font-size: 13px; line-height: 1.6; color: #4b5563;">
+                                    Nous vous informons que vous avez été marqué(e) <strong>ABSENT(E)</strong> par le formateur lors de la séance du <strong>${new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong>.
+                                </p>
+                                <div style="background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin: 1.5rem 0;">
+                                    <table style="width: 100%; font-size: 12px;">
+                                        <tr>
+                                            <td style="font-weight: 700; color: #4b5563; padding: 0.25rem 0; width: 35%;">Module / Matière :</td>
+                                            <td style="color: #111; padding: 0.25rem 0;">${subject}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 700; color: #4b5563; padding: 0.25rem 0;">Période :</td>
+                                            <td style="color: #111; padding: 0.25rem 0;">${heure || 'N/A'}</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 700; color: #4b5563; padding: 0.25rem 0;">Groupe :</td>
+                                            <td style="color: #111; padding: 0.25rem 0;">${group_id}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <p style="font-size: 11px; color: #6b7280; font-style: italic; line-height: 1.5; border-top: 1px solid #e5e7eb; padding-top: 1rem; margin-top: 1.5rem;">
+                                    Note: Si vous disposez d'un justificatif officiel (certificat médical, etc.), vous devez le présenter à l'administration de l'établissement dans un délai de 48 heures sous peine d'un blâme disciplinaire.
+                                </p>
+                            </div>
+                        `;
+                        sendEmail({
+                            to: st.email || `${st.name.replace(/\s+/g, '').toLowerCase()}@ofppt-edu.ma`,
+                            subject: `Avis d'absence : ${subject}`,
+                            html: mailHtml
+                        });
+                    }
+                }
             }
         }
 
@@ -360,5 +410,86 @@ exports.forceUpdatePassword = async (req, res) => {
     } catch (err) {
         console.error("FORCE UPDATE PASSWORD ERROR:", err);
         res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getFormateurSchedule = async (req, res, next) => {
+    try {
+        const formateurId = req.user.id;
+
+        // 1. Get schedule slots for this formateur
+        const [slots] = await pool.query(`
+            SELECT t.group_id as class, t.day, t.time, s.nom as room, t.subject
+            FROM timetables t
+            LEFT JOIN salles s ON t.salle_id = s.id
+            WHERE t.formateur_id = ?
+        `, [formateurId]);
+
+        // 2. Get unique classes taught by this formateur
+        const [classes] = await pool.query(`
+            SELECT DISTINCT g.id, g.id as title, f.nom as stream
+            FROM groups_supervisors gs
+            JOIN groups g ON gs.group_id = g.id
+            LEFT JOIN filiere f ON g.filiereId = f.id
+            WHERE gs.formateur_id = ?
+        `, [formateurId]);
+
+        res.json({
+            schedule: slots,
+            classes
+        });
+    } catch (err) {
+        console.error("GET FORMATEUR SCHEDULE ERROR:", err);
+        next(err);
+    }
+};
+
+exports.getCurrentSession = async (req, res, next) => {
+    try {
+        const formateurId = req.user.id;
+
+        // Get current day in French
+        const daysMap = ['DIMANCHE', 'LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
+        const now = new Date();
+        const currentDay = daysMap[now.getDay()];
+
+        if (currentDay === 'DIMANCHE') {
+            return res.json({ currentSession: null });
+        }
+
+        // Get today's slots
+        const [slots] = await pool.query(`
+            SELECT t.group_id as group_id, t.time, s.nom as room, t.subject
+            FROM timetables t
+            LEFT JOIN salles s ON t.salle_id = s.id
+            WHERE t.formateur_id = ? AND t.day = ?
+        `, [formateurId, currentDay]);
+
+        const currentTimeStr = now.toTimeString().split(' ')[0].substring(0, 5); // "HH:MM"
+        const parseMinutes = (timeStr) => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+        const currentMin = parseMinutes(currentTimeStr);
+
+        let activeSlot = null;
+
+        for (const slot of slots) {
+            // Parse "08:30 - 11:30"
+            const parts = slot.time.split('-').map(p => p.trim());
+            if (parts.length === 2) {
+                const startMin = parseMinutes(parts[0]);
+                const endMin = parseMinutes(parts[1]);
+                if (currentMin >= startMin && currentMin <= endMin) {
+                    activeSlot = slot;
+                    break;
+                }
+            }
+        }
+
+        res.json({ currentSession: activeSlot });
+    } catch (err) {
+        console.error("GET CURRENT SESSION ERROR:", err);
+        next(err);
     }
 };

@@ -13,7 +13,9 @@ const {
     clearCheckins,
     getProfile,
     updateProfile,
-    updateCheckinStatus
+    updateCheckinStatus,
+    getFormateurSchedule,
+    getCurrentSession
 } = require('../controllers/formateurController');
 
 // All protected for Formateur
@@ -21,6 +23,8 @@ router.get('/profile', protect, authorize('formateur'), getProfile);
 router.put('/profile', protect, authorize('formateur'), updateProfile);
 router.post('/submit-report', protect, authorize('formateur'), submitReport);
 router.get('/groups', protect, authorize('formateur'), getGroups);
+router.get('/schedule', protect, authorize('formateur'), getFormateurSchedule);
+router.get('/current-session', protect, authorize('formateur'), getCurrentSession);
 
 router.get('/users/by-group/:groupId', protect, authorize('formateur'), getUsersByGroup);
 router.post('/process-checkin', protect, authorize('formateur'), processCheckin);

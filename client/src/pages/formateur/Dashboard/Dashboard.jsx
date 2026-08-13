@@ -39,6 +39,7 @@ const FormateurDashboard = () => {
     const [isConfirming, setIsConfirming] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [isSelectOpen, setIsSelectOpen] = useState(false);
+    const [formateurSchedule, setFormateurSchedule] = useState([]);
 
     const selectRef = useRef(null);
 
@@ -63,10 +64,14 @@ const FormateurDashboard = () => {
     useEffect(() => {
         const fetchScheduleData = async () => {
             try {
-                const groupsData = await studentService.getFormateurGroups();
+                const [groupsData, scheduleData] = await Promise.all([
+                    studentService.getFormateurGroups(),
+                    attendanceService.getFormateurSchedule()
+                ]);
                 setGroups(groupsData.groups || []);
-
-                // Auto-select group from URL if present
+                setFormateurSchedule(scheduleData.schedule || []);
+ 
+                // 1. Check URL first
                 const selectedGroupId = searchParams.get('selectedGroup');
                 if (selectedGroupId) {
                     const session = {
@@ -76,8 +81,22 @@ const FormateurDashboard = () => {
                         time: '08:30-11:00'
                     };
                     setActiveSession({ ...session, group: selectedGroupId });
-
                     fetchStudents(selectedGroupId);
+                } else {
+                    // 2. Check backend for today's active session based on time
+                    const sessionRes = await attendanceService.getCurrentSession();
+                    if (sessionRes && sessionRes.currentSession) {
+                        const s = sessionRes.currentSession;
+                        const session = {
+                            group: s.group_id,
+                            subject: s.subject,
+                            room: s.room || 'Salle',
+                            time: s.time
+                        };
+                        setActiveSession(session);
+                        fetchStudents(s.group_id);
+                        addNotification(t('formateur.active_session_autofill', `Session active détectée pour ${s.group_id} (${s.subject}).`), 'success');
+                    }
                 }
             } catch (err) {
                 console.error("Fetch Data Error:", err);
@@ -87,25 +106,32 @@ const FormateurDashboard = () => {
         };
         fetchScheduleData();
     }, [searchParams]);
-
+ 
     const handleSessionSelect = (groupId) => {
         if (!groupId) {
             setActiveSession(null);
             setStudents([]);
             return;
         }
+ 
+        // Get current day in French
+        const daysMap = ['DIMANCHE', 'LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'];
+        const currentDay = daysMap[new Date().getDay()];
+
+        // Find if this group has a session today in the formateur's schedule
+        const todaySlot = formateurSchedule.find(s => s.class === groupId && s.day === currentDay);
+        
+        // Find any slot for this group if not today
+        const anySlot = todaySlot || formateurSchedule.find(s => s.class === groupId);
 
         const session = {
             group: groupId,
-            subject: 'SESSION',
-            room: 'ROOM',
-            time: '08:30-11:00'
+            subject: anySlot ? anySlot.subject : 'SESSION',
+            room: anySlot ? anySlot.room : 'ROOM',
+            time: anySlot ? anySlot.time : '08:30-11:00'
         };
-
-        setActiveSession({
-            ...session,
-            group: groupId
-        });
+ 
+        setActiveSession(session);
         fetchStudents(groupId);
     };
 
