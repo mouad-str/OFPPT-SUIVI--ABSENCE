@@ -714,7 +714,8 @@
 }
 
 /* Modals */
-.filiere-modal-overlay {
+.filiere-modal-overlay,
+.filiere-confirm-modal-wrapper {
     position: fixed;
     inset: 0;
     background-color: rgba(15, 23, 42, 0.4);
