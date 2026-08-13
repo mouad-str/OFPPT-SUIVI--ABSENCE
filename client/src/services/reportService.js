@@ -21,6 +21,11 @@ export const reportService = {
         return response.data;
     },
 
+    correctAbsence: async (recordId) => {
+        const response = await api.delete(`/admin/absence/${recordId}`);
+        return response.data;
+    },
+
     submitDisciplinePenalty: async (penaltyData) => {
         const response = await api.post('/admin/discipline', penaltyData);
         return response.data;

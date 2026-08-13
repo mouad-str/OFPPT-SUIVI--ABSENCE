@@ -96,6 +96,17 @@ const AbsenceRegistry = () => {
         }
     };
 
+    const handleCorrect = async (recordId) => {
+        try {
+            await reportService.correctAbsence(recordId);
+            setRegistry(prev => prev.filter(r => r.record_id !== recordId));
+            addNotification(t('absence_registry.correct_success', 'Absence corrigée avec succès (stagiaire marqué présent).'), "success");
+        } catch (err) {
+            console.error("CORRECT ABSENCE ERROR:", err);
+            addNotification(t('absence_registry.correct_error', 'Erreur lors de la correction de l\'absence.'), "error");
+        }
+    };
+
 
     const filteredRegistry = registry.filter(item => {
         const matchesSearch = item.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -342,6 +353,13 @@ const AbsenceRegistry = () => {
                                                     className={`registry-btn-action ${item.justified === 'JUSTIFIÉ' ? 'cancel-justify' : 'justify'}`}
                                                 >
                                                     {item.justified === 'JUSTIFIÉ' ? t('absence_registry.btn_cancel_justif') : t('absence_registry.btn_justify')}
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleCorrect(item.record_id)}
+                                                    className="registry-btn-action correct"
+                                                    style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                                >
+                                                    {t('absence_registry.btn_correct', 'Corriger')}
                                                 </button>
                                                 <button 
                                                     onClick={() => navigate('/admin/penalty-decision', { state: { student: item } })}

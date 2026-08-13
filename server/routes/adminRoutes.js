@@ -9,7 +9,7 @@ const {
     createFiliere, deleteFiliere, updateFiliere,
     getSalles, createSalle, updateSalle, deleteSalle,
     getAbsenceRegistry, justifyAbsence, addDisciplinePenalty, getDisciplineHistory,
-    createUser, updateUser, deleteUser, getStudentDetails, importExcel, recreateClasses
+    createUser, updateUser, deleteUser, getStudentDetails, importExcel, recreateClasses, correctAbsence
 } = require('../controllers/adminController');
 
 const multer = require('multer');
@@ -44,6 +44,7 @@ router.delete('/users/:id', protect, authorize('admin'), deleteUser);
 
 router.get('/absence-registry', protect, authorize('admin'), getAbsenceRegistry);
 router.post('/justify-absence', protect, authorize('admin'), justifyAbsence);
+router.delete('/absence/:recordId', protect, authorize('admin'), correctAbsence);
 router.post('/discipline', protect, authorize('admin'), addDisciplinePenalty);
 router.get('/discipline/:stagiaireId', protect, authorize('admin'), getDisciplineHistory);
 router.get('/students/:id', protect, authorize('admin', 'formateur'), getStudentDetails);

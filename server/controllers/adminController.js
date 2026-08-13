@@ -724,6 +724,40 @@ exports.justifyAbsence = async (req, res) => {
     }
 };
 
+exports.correctAbsence = async (req, res, next) => {
+    try {
+        const { recordId } = req.params;
+
+        // 1. Find the student_id associated with this record to know their group
+        const [[record]] = await pool.query(
+            'SELECT student_id FROM report_attendance WHERE id = ?',
+            [recordId]
+        );
+
+        if (!record) {
+            return res.status(404).json({ message: 'Absence record not found.' });
+        }
+
+        // 2. Delete the record from report_attendance
+        await pool.query('DELETE FROM report_attendance WHERE id = ?', [recordId]);
+
+        // 3. Query the student\'s group to update their active status
+        const [[student]] = await pool.query(
+            'SELECT group_id FROM stagiaires WHERE NumInscription = ?',
+            [record.student_id]
+        );
+
+        if (student && student.group_id) {
+            await updateGroupActiveStatus(student.group_id);
+        }
+
+        res.json({ message: 'Absence corrigée. Le stagiaire est marqué comme présent.' });
+    } catch (err) {
+        console.error("CORRECT ABSENCE ERROR:", err);
+        next(err);
+    }
+};
+
 exports.addDisciplinePenalty = async (req, res) => {
     try {
         const { stagiaireId, penalty, reason } = req.body;
