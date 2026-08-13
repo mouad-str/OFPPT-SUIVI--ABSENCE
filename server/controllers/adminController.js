@@ -1161,6 +1161,62 @@ const updateGroupActiveStatus = async (groupId) => {
                 [studentIds, groupId]
             );
         }
+
+        // 4. Automated Disciplinary Penalties Check
+        const [students] = await pool.query(
+            'SELECT NumInscription, name FROM stagiaires WHERE group_id = ?',
+            [groupId]
+        );
+
+        for (const st of students) {
+            // Count unjustified absences for this student
+            const [[{ abs_count }]] = await pool.query(
+                'SELECT COUNT(*) as abs_count FROM report_attendance WHERE student_id = ? AND status = "ABSENT" AND Justifier != "JUSTIFIÉ"',
+                [st.NumInscription]
+            );
+
+            // Get existing blames
+            const [blames] = await pool.query(
+                'SELECT penalty_type FROM suivieDisipline WHERE student_id = ?',
+                [st.NumInscription]
+            );
+            const blameTypes = blames.map(b => b.penalty_type);
+
+            let newBlame = null;
+            let reason = '';
+
+            if (abs_count >= 9 && !blameTypes.includes('Blâme 3')) {
+                newBlame = 'Blâme 3';
+                reason = `Généré automatiquement : Seuil de ${abs_count} absences non justifiées dépassé.`;
+            } else if (abs_count >= 6 && !blameTypes.includes('Blâme 2')) {
+                newBlame = 'Blâme 2';
+                reason = `Généré automatiquement : Seuil de ${abs_count} absences non justifiées dépassé.`;
+            } else if (abs_count >= 3 && !blameTypes.includes('Blâme 1')) {
+                newBlame = 'Blâme 1';
+                reason = `Généré automatiquement : Seuil de ${abs_count} absences non justifiées dépassé.`;
+            }
+
+            if (newBlame) {
+                // Insert blame
+                await pool.query(
+                    'INSERT INTO suivieDisipline (student_id, penalty_type, date, reason) VALUES (?, ?, CURDATE(), ?)',
+                    [st.NumInscription, newBlame, reason]
+                );
+
+                // Insert notifications for admins
+                const [admins] = await pool.query('SELECT id FROM admins');
+                for (const admin of admins) {
+                    await pool.query(
+                        'INSERT INTO notifications (user_id, type, category, title, message) VALUES (?, "alert", "DISCIPLINE", ?, ?)',
+                        [
+                            admin.id,
+                            `Pénalité automatique : ${st.name}`,
+                            `Le stagiaire ${st.name} (ID: ${st.NumInscription}) s'est vu attribuer un ${newBlame} suite à ${abs_count} absences non justifiées.`
+                        ]
+                    );
+                }
+            }
+        }
     } catch (err) {
         console.error(`Error updating active status for group ${groupId}:`, err);
     }

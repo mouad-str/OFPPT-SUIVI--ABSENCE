@@ -82,8 +82,16 @@ const StudentProfile = () => {
                     <ArrowLeft className={`w-4 h-4 group-hover:-translate-x-1 transition-transform ${isRtl ? 'rotate-180' : ''}`} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Retourner à la liste</span>
                 </button>
-                <div className="admin-header-actions">
-                    <span className="px-4 py-2 bg-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                <div className="admin-header-actions flex gap-4">
+                    <button
+                        onClick={() => window.open(`/admin/print-attendance/${student.NumInscription}`, '_blank')}
+                        className="btn-print-action px-4 py-2 text-[9px] flex items-center gap-2"
+                        style={{ height: '32px', borderRadius: '12px', background: 'rgba(2, 132, 199, 0.1)', color: '#0284c7', border: '1px solid rgba(2, 132, 199, 0.2)' }}
+                    >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span className="font-black uppercase tracking-widest">FICHE D'ABSENCE</span>
+                    </button>
+                    <span className="px-4 py-2 bg-slate-100 rounded-xl text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center">
                         ID: {student.NumInscription}
                     </span>
                 </div>
@@ -245,7 +253,13 @@ const StudentProfile = () => {
                                     </p>
                                     <div className="mt-4 pt-4 border-t border-slate-200/50 flex items-center justify-between">
                                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">Signalé par Admin</span>
-                                        <button className="text-[var(--primary)] text-[9px] font-black uppercase hover:underline">Détails</button>
+                                        <button 
+                                            onClick={() => window.open(`/admin/print-blame/${student.NumInscription}/${d.id}`, '_blank')}
+                                            className="text-[var(--primary)] text-[9px] font-black uppercase hover:underline flex items-center gap-1"
+                                        >
+                                            <FileText className="w-3.5 h-3.5" />
+                                            <span>Imprimer</span>
+                                        </button>
                                     </div>
                                 </div>
                             ))

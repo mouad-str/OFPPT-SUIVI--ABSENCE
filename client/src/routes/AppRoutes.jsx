@@ -20,6 +20,8 @@ import PenaltyDecision from '../pages/admin/PenaltyDecision/PenaltyDecision';
 import StudentProfile from '../pages/admin/StudentProfile/StudentProfile';
 import Filiere from '../pages/admin/Filiere/Filiere';
 import Salles from '../pages/admin/Salles/Salles';
+import PrintBlame from '../pages/admin/PrintTemplates/PrintBlame';
+import PrintAttendance from '../pages/admin/PrintTemplates/PrintAttendance';
 
 // Formateur Pages
 import FormateurDashboard from '../pages/formateur/Dashboard/Dashboard';
@@ -102,6 +104,35 @@ export const AppRoutes = () => {
                         <DashboardLayout>
                             <StudentProfile />
                         </DashboardLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/student/:id"
+                element={
+                    <ProtectedRoute roles={['admin', 'formateur']}>
+                        <DashboardLayout>
+                            <StudentProfile />
+                        </DashboardLayout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/admin/print-blame/:studentId/:penaltyId"
+                element={
+                    <ProtectedRoute roles={['admin']}>
+                        <PrintBlame />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/admin/print-attendance/:studentId"
+                element={
+                    <ProtectedRoute roles={['admin']}>
+                        <PrintAttendance />
                     </ProtectedRoute>
                 }
             />
