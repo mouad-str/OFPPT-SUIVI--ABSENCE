@@ -9,7 +9,7 @@ const {
     createFiliere, deleteFiliere, updateFiliere,
     getSalles, createSalle, updateSalle, deleteSalle,
     getAbsenceRegistry, justifyAbsence, addDisciplinePenalty, getDisciplineHistory,
-    createUser, updateUser, deleteUser, getStudentDetails, importExcel
+    createUser, updateUser, deleteUser, getStudentDetails, importExcel, recreateClasses
 } = require('../controllers/adminController');
 
 const multer = require('multer');
@@ -22,6 +22,7 @@ router.get('/groups', protect, authorize('admin'), getGroups);
 router.post('/groups', protect, authorize('admin'), createGroup);
 router.put('/groups/:id', protect, authorize('admin'), updateGroup);
 router.delete('/groups/:id', protect, authorize('admin'), deleteGroup);
+router.post('/groups/recreate-year', protect, authorize('admin'), recreateClasses);
 router.get('/reports', protect, authorize('admin'), getReports);
 
 router.get('/filieres', protect, authorize('admin'), getFilieres);

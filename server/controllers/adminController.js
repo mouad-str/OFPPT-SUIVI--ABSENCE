@@ -237,6 +237,26 @@ exports.deleteGroup = async (req, res) => {
     }
 };
 
+exports.recreateClasses = async (req, res, next) => {
+    try {
+        const { newYear } = req.body;
+        if (!newYear) {
+            return res.status(400).json({ message: "L'année scolaire est obligatoire." });
+        }
+
+        // 1. Update the academic year for all groups
+        await pool.query('UPDATE `groups` SET annee_scolaire = ?', [newYear]);
+
+        // 2. Set all students' group_id to NULL and Active to TRUE
+        await pool.query('UPDATE stagiaires SET group_id = NULL, Active = TRUE');
+
+        res.json({ message: `Classes recréées pour l'année ${newYear}. Tous les stagiaires ont été dissociés.` });
+    } catch (err) {
+        console.error("RECREATE CLASSES ERROR:", err);
+        next(err);
+    }
+};
+
 exports.getUsersByGroup = async (req, res) => {
     try {
         const { groupId } = req.params;
@@ -264,7 +284,7 @@ exports.getUsersByGroup = async (req, res) => {
 
 exports.createUser = async (req, res, next) => {
     try {
-        const { name, role, group_id, filiereId, numInsc } = req.body;
+        const { name, role, group_id, filiereId, numInsc, type } = req.body;
         if (!name || !role) {
             return res.status(400).json({ message: 'Name and Role are mandatory.' });
         }
@@ -337,7 +357,12 @@ exports.createUser = async (req, res, next) => {
 
         } else {
             // Staff creation (Admin/Formateur)
-            const email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+            let email;
+            if (role === 'formateur' && type === 'Vacataire') {
+                email = (req.body.email || (name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt-edu.ma')).trim().toLowerCase();
+            } else {
+                email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+            }
             const defaultPassword = email.split('@')[0];
             const bcrypt = require('bcryptjs');
             const hash = await bcrypt.hash(defaultPassword, 10);
@@ -345,8 +370,8 @@ exports.createUser = async (req, res, next) => {
             const table = role === 'admin' ? 'admins' : 'formateurs';
 
             const [result] = await pool.query(
-                `INSERT INTO ${table} (name, email, password${role === 'formateur' ? ', type' : ''}) VALUES (?, ?, ?${role === 'formateur' ? ", 'Parrain'" : ''})`,
-                [name, email, hash]
+                `INSERT INTO ${table} (name, email, password${role === 'formateur' ? ', type' : ''}) VALUES (?, ?, ?${role === 'formateur' ? ', ?' : ''})`,
+                role === 'formateur' ? [name, email, hash, type || 'Parrain'] : [name, email, hash]
             );
 
             const userId = result.insertId;
@@ -360,7 +385,7 @@ exports.createUser = async (req, res, next) => {
                 }
             }
 
-            const [[newUser]] = await pool.query(`SELECT id, name, email, '${role}' as role FROM ${table} WHERE id = ?`, [userId]);
+            const [[newUser]] = await pool.query(`SELECT id, name, email, '${role}' as role${role === 'formateur' ? ', type' : ''} FROM ${table} WHERE id = ?`, [userId]);
             res.status(201).json({
                 message: 'Staff identity successfully initialized.',
                 user: { ...newUser, status: 'ACTIVE', lastLogin: 'Staff' }
@@ -374,15 +399,16 @@ exports.createUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, role, group_id, filiereId } = req.body;
+        const { name, role, group_id, filiereId, type } = req.body;
 
         if (!name || !role) {
             return res.status(400).json({ message: 'Name and Role are mandatory.' });
         }
 
         if (role === 'stagiaire') {
-            // 1. Get old QR path to delete it
-            const [[oldRecord]] = await pool.query('SELECT qr_path FROM stagiaires WHERE NumInscription = ?', [id]);
+            // 1. Get old group_id and QR path to delete it
+            const [[oldRecord]] = await pool.query('SELECT group_id, qr_path FROM stagiaires WHERE NumInscription = ?', [id]);
+            const oldGroupId = oldRecord ? oldRecord.group_id : null;
 
             if (oldRecord && oldRecord.qr_path) {
                 const relativeOldPath = oldRecord.qr_path.startsWith('/') ? oldRecord.qr_path.substring(1) : oldRecord.qr_path;
@@ -398,6 +424,14 @@ exports.updateUser = async (req, res, next) => {
                 'UPDATE stagiaires SET name = ?, group_id = ?, filiereId = ?, email = ? WHERE NumInscription = ?',
                 [name, group_id || null, filiereId || null, email, id]
             );
+
+            // Trigger active status updates for both old and new groups
+            if (oldGroupId) {
+                await updateGroupActiveStatus(oldGroupId);
+            }
+            if (group_id) {
+                await updateGroupActiveStatus(group_id);
+            }
 
             // 3. Generate New QR Code
             const qrData = {
@@ -435,17 +469,29 @@ exports.updateUser = async (req, res, next) => {
             const [[updated]] = await pool.query('SELECT NumInscription as id, name, group_id, filiereId, qr_path FROM stagiaires WHERE NumInscription = ?', [id]);
             res.json({ message: 'Stagiaire updated. New QR generated.', user: { ...updated, role: 'stagiaire' } });
         } else {
-            const email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+            let email;
+            if (role === 'formateur' && type === 'Vacataire') {
+                email = (req.body.email || (name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt-edu.ma')).trim().toLowerCase();
+            } else {
+                email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+            }
             const defaultPassword = email.split('@')[0];
             const bcrypt = require('bcryptjs');
             const hash = await bcrypt.hash(defaultPassword, 10);
 
             const table = role === 'admin' ? 'admins' : 'formateurs';
 
-            await pool.query(
-                `UPDATE ${table} SET name = ?, email = ?, password = ? WHERE id = ?`,
-                [name, email, hash, id]
-            );
+            if (role === 'formateur') {
+                await pool.query(
+                    `UPDATE formateurs SET name = ?, email = ?, password = ?, type = ? WHERE id = ?`,
+                    [name, email, hash, type || 'Parrain', id]
+                );
+            } else {
+                await pool.query(
+                    `UPDATE admins SET name = ?, email = ?, password = ? WHERE id = ?`,
+                    [name, email, hash, id]
+                );
+            }
 
             if (role === 'formateur' && group_id) {
                 await pool.query('DELETE FROM groups_supervisors WHERE formateur_id = ?', [id]);
@@ -456,7 +502,7 @@ exports.updateUser = async (req, res, next) => {
                     }
                 }
             }
-            const [[updated]] = await pool.query(`SELECT id, name, email, '${role}' as role FROM ${table} WHERE id = ?`, [id]);
+            const [[updated]] = await pool.query(`SELECT id, name, email, '${role}' as role${role === 'formateur' ? ', type' : ''} FROM ${table} WHERE id = ?`, [id]);
             res.json({ message: 'Staff identity updated.', user: updated });
         }
     } catch (err) {
@@ -637,6 +683,7 @@ exports.justifyAbsence = async (req, res) => {
             WHERE ra.id = ?
         `, [recordId]);
 
+        let studentGroupId = null;
         if (record) {
             // 2. Update all attendance records for this student on this day
             await pool.query(`
@@ -645,9 +692,29 @@ exports.justifyAbsence = async (req, res) => {
                 SET ra.Justifier = ?
                 WHERE ra.student_id = ? AND r.date = ?
             `, [newStatus, record.student_id, record.date]);
+
+            // Query group_id of the student
+            const [[student]] = await pool.query('SELECT group_id FROM stagiaires WHERE NumInscription = ?', [record.student_id]);
+            if (student) {
+                studentGroupId = student.group_id;
+            }
         } else {
             // Fallback in case record is not found
             await pool.query('UPDATE report_attendance SET Justifier = ? WHERE id = ?', [newStatus, recordId]);
+            
+            // Try to find the student and their group via recordId fallback
+            const [[student]] = await pool.query(`
+                SELECT s.group_id FROM stagiaires s 
+                JOIN report_attendance ra ON s.NumInscription = ra.student_id 
+                WHERE ra.id = ?
+            `, [recordId]);
+            if (student) {
+                studentGroupId = student.group_id;
+            }
+        }
+
+        if (studentGroupId) {
+            await updateGroupActiveStatus(studentGroupId);
         }
 
         res.json({ message: `Absence marquée comme ${newStatus}.` });
@@ -671,6 +738,12 @@ exports.addDisciplinePenalty = async (req, res) => {
             'UPDATE report_attendance SET Justifier = "NON JUSTIFIÉ" WHERE student_id = ? AND Justifier = "ABSENCE" ORDER BY id DESC LIMIT 1',
             [stagiaireId]
         );
+
+        // Get student's group and update active status
+        const [[student]] = await pool.query('SELECT group_id FROM stagiaires WHERE NumInscription = ?', [stagiaireId]);
+        if (student && student.group_id) {
+            await updateGroupActiveStatus(student.group_id);
+        }
 
         res.json({ message: 'Penalty assigned and status updated to NON JUSTIFIÉ.' });
     } catch (err) {
@@ -729,9 +802,21 @@ exports.getGroups = async (req, res) => {
 
 exports.getFilieres = async (req, res) => {
     try {
-        const [filieres] = await pool.query('SELECT * FROM filiere');
+        const [filieres] = await pool.query(`
+            SELECT 
+                f.id, 
+                f.nom, 
+                COUNT(DISTINCT g.id) AS groupes_count, 
+                COUNT(DISTINCT s.NumInscription) AS stagiaires_count
+            FROM filiere f
+            LEFT JOIN \`groups\` g ON g.filiereId = f.id
+            LEFT JOIN stagiaires s ON s.filiereId = f.id OR s.group_id = g.id
+            GROUP BY f.id, f.nom
+            ORDER BY f.id DESC
+        `);
         res.json({ filieres });
     } catch (err) {
+        console.error("GET FILIERES ERROR:", err);
         res.status(500).json({ message: 'Server Error getting filieres' });
     }
 };
@@ -748,10 +833,17 @@ exports.createFiliere = async (req, res, next) => {
 
 exports.deleteFiliere = async (req, res) => {
     try {
-        await pool.query('DELETE FROM filiere WHERE id = ?', [req.params.id]);
-        res.json({ message: 'Filiere deleted' });
+        const { id } = req.params;
+        const [groups] = await pool.query('SELECT COUNT(*) as count FROM `groups` WHERE filiereId = ?', [id]);
+        if (groups[0].count > 0) {
+            return res.status(400).json({ 
+                message: `Impossible de supprimer: cette filière contient encore ${groups[0].count} groupe(s).` 
+            });
+        }
+        await pool.query('DELETE FROM filiere WHERE id = ?', [id]);
+        res.json({ message: 'Filière supprimée avec succès' });
     } catch (err) {
-        console.error(err);
+        console.error("DELETE FILIERE ERROR:", err);
         res.status(500).json({ message: 'Server Error deleting filiere' });
     }
 };
@@ -1001,3 +1093,43 @@ exports.importExcel = async (req, res) => {
         res.status(500).json({ message: 'Erreur lors de l\'importation du fichier Excel.' });
     }
 };
+
+const updateGroupActiveStatus = async (groupId) => {
+    if (!groupId) return;
+    try {
+        // 1. Get the last report for this group
+        const [lastReports] = await pool.query(
+            'SELECT id FROM reports WHERE group_id = ? ORDER BY date DESC, created_at DESC LIMIT 1',
+            [groupId]
+        );
+
+        if (lastReports.length === 0) {
+            // No reports yet, so all students in the group are Active = True
+            await pool.query('UPDATE stagiaires SET Active = TRUE WHERE group_id = ?', [groupId]);
+            return;
+        }
+
+        const lastReportId = lastReports[0].id;
+
+        // 2. Set all students in the group to Active = True by default
+        await pool.query('UPDATE stagiaires SET Active = TRUE WHERE group_id = ?', [groupId]);
+
+        // 3. Find all students who were ABSENT and whose absence is NOT justified (Justifier != \'JUSTIFIÉ\') in this last report
+        const [inactiveStudents] = await pool.query(
+            'SELECT student_id FROM report_attendance WHERE report_id = ? AND status = "ABSENT" AND Justifier != "JUSTIFIÉ"',
+            [lastReportId]
+        );
+
+        if (inactiveStudents.length > 0) {
+            const studentIds = inactiveStudents.map(s => s.student_id);
+            await pool.query(
+                'UPDATE stagiaires SET Active = FALSE WHERE NumInscription IN (?) AND group_id = ?',
+                [studentIds, groupId]
+            );
+        }
+    } catch (err) {
+        console.error(`Error updating active status for group ${groupId}:`, err);
+    }
+};
+
+exports.updateGroupActiveStatus = updateGroupActiveStatus;

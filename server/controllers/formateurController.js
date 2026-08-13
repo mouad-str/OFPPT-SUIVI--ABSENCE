@@ -1,6 +1,7 @@
 const pool = require('../config/db');
 const { spawn } = require('child_process');
 const path = require('path');
+const { updateGroupActiveStatus } = require('./adminController');
 
 
 
@@ -51,6 +52,9 @@ exports.submitReport = async (req, res) => {
         // 4. Clear active checkins since session is concluded
         await pool.query('DELETE FROM active_checkins WHERE group_id = ?', [group_id]);
 
+        // 5. Update students' active status in the group based on this report
+        await updateGroupActiveStatus(group_id);
+ 
         res.status(201).json({ message: 'Report submitted successfully', reportId });
     } catch (err) {
         console.error("SUBMIT REPORT ERROR:", err);

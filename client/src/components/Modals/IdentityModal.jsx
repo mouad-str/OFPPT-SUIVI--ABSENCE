@@ -146,7 +146,16 @@ const IdentityModal = ({ isOpen, onClose, newUser, setNewUser, handleAddUser, ha
                                                     key={role.value}
                                                     className={`identity-modal-dropdown-item ${newUser.role === role.value ? 'selected' : ''} ${isRtl ? 'rtl' : ''}`}
                                                     onClick={() => {
-                                                        setNewUser({ ...newUser, role: role.value });
+                                                        const isFormateur = role.value === 'formateur';
+                                                        const defaultType = isFormateur ? 'Parrain' : undefined;
+                                                        const emailSuffix = isFormateur ? '@ofppt.ma' : '@ofppt-edu.ma';
+                                                        const suggestedEmail = newUser.name ? (newUser.name.trim().toLowerCase().replace(/\s+/g, '.') + emailSuffix) : '';
+                                                        setNewUser({ 
+                                                            ...newUser, 
+                                                            role: role.value, 
+                                                            type: defaultType,
+                                                            email: suggestedEmail
+                                                        });
                                                         setIsRoleDropdownOpen(false);
                                                     }}
                                                 >
@@ -160,6 +169,38 @@ const IdentityModal = ({ isOpen, onClose, newUser, setNewUser, handleAddUser, ha
                                         </div>
                                     )}
                                 </div>
+
+                                 {/* Type de Formateur (Uniquement pour les formateurs) */}
+                                 {newUser.role === 'formateur' && (
+                                     <div className="identity-modal-field">
+                                         <label className={`identity-modal-label ${isRtl ? 'rtl' : ''}`}>
+                                             <Layers className="identity-modal-label-icon" />
+                                             {isRtl ? 'نوع المكون' : 'Type de Formateur'}
+                                         </label>
+                                         <div className="identity-modal-tabs">
+                                             <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                     const email = newUser.name ? (newUser.name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma') : '';
+                                                     setNewUser({ ...newUser, type: 'Parrain', email });
+                                                 }}
+                                                 className={`identity-modal-tab-btn ${newUser.type !== 'Vacataire' ? 'active' : 'inactive'}`}
+                                             >
+                                                 {isRtl ? 'رئيسي (Parrain)' : 'Parrain'}
+                                             </button>
+                                             <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                     const email = newUser.name ? (newUser.name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt-edu.ma') : '';
+                                                     setNewUser({ ...newUser, type: 'Vacataire', email });
+                                                 }}
+                                                 className={`identity-modal-tab-btn ${newUser.type === 'Vacataire' ? 'active' : 'inactive'}`}
+                                             >
+                                                 {isRtl ? 'عرضي (Vacataire)' : 'Vacataire'}
+                                             </button>
+                                         </div>
+                                     </div>
+                                 )}
 
                                 {/* Dynamic Tabs for Stagiaire creation */}
                                 {newUser.role === 'stagiaire' && !isEditing && (
@@ -194,7 +235,14 @@ const IdentityModal = ({ isOpen, onClose, newUser, setNewUser, handleAddUser, ha
                                             value={newUser.name}
                                             onChange={e => {
                                                 const name = e.target.value;
-                                                const email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+                                                let email = newUser.email;
+                                                if (newUser.role === 'formateur' && newUser.type === 'Vacataire') {
+                                                    email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt-edu.ma';
+                                                } else if (['formateur', 'admin'].includes(newUser.role)) {
+                                                    email = name.trim().toLowerCase().replace(/\s+/g, '.') + '@ofppt.ma';
+                                                } else {
+                                                    email = name.replace(/\s+/g, '').toLowerCase() + '@ofppt-edu.ma';
+                                                }
                                                 setNewUser({ ...newUser, name, email });
                                             }}
                                             placeholder={t('modals.identity.name_placeholder')}
@@ -203,7 +251,7 @@ const IdentityModal = ({ isOpen, onClose, newUser, setNewUser, handleAddUser, ha
                                     </div>
                                 )}
 
-                                {/* Email & Password (Formateur / Admin only - Read Only) */}
+                                {/* Email & Password (Formateur / Admin only) */}
                                 {['formateur', 'admin'].includes(newUser.role) && (
                                     <div className="identity-modal-input-grid">
                                          <div className="identity-modal-field">
@@ -213,9 +261,10 @@ const IdentityModal = ({ isOpen, onClose, newUser, setNewUser, handleAddUser, ha
                                              </label>
                                              <input
                                                  type="email"
-                                                 disabled
-                                                 value={newUser.email || `${(newUser.name || 'nom').trim().toLowerCase().replace(/\s+/g, '.')}@ofppt.ma`}
-                                                 className={`identity-modal-input disabled ${isRtl ? 'rtl' : ''}`}
+                                                 disabled={!(newUser.role === 'formateur' && newUser.type === 'Vacataire')}
+                                                 value={newUser.email !== undefined ? newUser.email : `${(newUser.name || 'nom').trim().toLowerCase().replace(/\s+/g, '.')}@ofppt.ma`}
+                                                 onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                                                 className={`identity-modal-input ${!(newUser.role === 'formateur' && newUser.type === 'Vacataire') ? 'disabled' : ''} ${isRtl ? 'rtl' : ''}`}
                                              />
                                          </div>
                                          <div className="identity-modal-field">

@@ -57,6 +57,11 @@ export const studentService = {
         return response.data;
     },
 
+    recreateClasses: async (newYear) => {
+        const response = await api.post('/admin/groups/recreate-year', { newYear });
+        return response.data;
+    },
+
     // Filieres
     getFilieres: async () => {
         const response = await api.get('/admin/filieres');

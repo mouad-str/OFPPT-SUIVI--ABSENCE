@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle } from 'lucide-react';
 import { GroupModal, ConfirmationModal } from '../../../components/Modals';
@@ -34,6 +35,9 @@ const Squadrons = () => {
     const [availableFilieres, setAvailableFilieres] = useState([]);
     const [customFiliere, setCustomFiliere] = useState({ nom: '' });
     const [purgeInfo, setPurgeInfo] = useState({ isOpen: false, groupId: '' });
+    const [isRecreateModalOpen, setIsRecreateModalOpen] = useState(false);
+    const [recreateYear, setRecreateYear] = useState('2026/2027');
+    const [isRecreateYearDropdownOpen, setIsRecreateYearDropdownOpen] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -118,6 +122,18 @@ const Squadrons = () => {
         }
     };
 
+    const handleRecreateClasses = async () => {
+        try {
+            await studentService.recreateClasses(recreateYear);
+            await fetchData();
+            setIsRecreateModalOpen(false);
+            addNotification('Classes recréées et transitionnées avec succès.', 'success');
+        } catch (error) {
+            console.error('Error recreating classes', error);
+            addNotification(error.response?.data?.message || 'Erreur lors de la transition d\'année', 'error');
+        }
+    };
+
     const handleFlip = (grp) => {
         if (flippedCardId === grp.id) {
             setFlippedCardId(null);
@@ -192,6 +208,10 @@ const Squadrons = () => {
                         )}
                     </div>
 
+                    <button onClick={() => setIsRecreateModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <AlertCircle className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />
+                        <span>{isRtl ? 'سنة دراسية جديدة' : 'NOUVELLE ANNÉE'}</span>
+                    </button>
                     <button onClick={() => setIsGroupModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3">
                         <Plus className="w-5 h-5" />
                         <span>CRÉER UN GROUPE</span>
@@ -497,6 +517,96 @@ const Squadrons = () => {
                     <p className="squadrons-init-subtitle">Ajouter une nouvelle division</p>
                 </div>
             </div>
+
+            {isRecreateModalOpen && ReactDOM.createPortal(
+                <div className="confirmation-modal-overlay">
+                    <div className={`confirmation-modal-content ${isRtl ? 'rtl' : ''}`} style={{ maxWidth: '480px' }}>
+                        <div className="confirmation-modal-accent-line" style={{ background: 'var(--color-warning)' }}></div>
+
+                        <div className="confirmation-modal-header" style={{ marginBottom: '1.5rem' }}>
+                            <div className="confirmation-modal-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'rgb(245, 158, 11)' }}>
+                                <AlertCircle className="confirmation-modal-icon" />
+                            </div>
+                            <div className="confirmation-modal-title-group">
+                                <span className="confirmation-modal-title-tag" style={{ color: 'rgb(245, 158, 11)' }}>
+                                    {isRtl ? 'الانتقال إلى سنة دراسية جديدة' : 'TRANSITION NOUVELLE ANNÉE'}
+                                </span>
+                                <h3 className="confirmation-modal-message" style={{ fontSize: '15px', color: 'var(--text-primary)', marginTop: '0.25rem' }}>
+                                    {isRtl ? 'هل أنت متأكد من رغبتك في بدء سنة دراسية جديدة؟' : 'Voulez-vous recréer les classes pour une nouvelle année ?'}
+                                </h3>
+                            </div>
+                        </div>
+
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '1.5rem', fontWeight: 500 }}>
+                            {isRtl 
+                                ? 'سيقوم هذا الإجراء بتحديث السنة الدراسية لجميع المجموعات وإلغاء ارتباط جميع الطلاب الحاليين بها (تصبح المجموعات فارغة بدون طلاب).' 
+                                : 'Cette action mettra à jour l\'année scolaire de tous les groupes et dissociera tous les stagiaires actuels (les groupes redeviendront vides).'}
+                        </p>
+
+                        <div className="squadrons-input-wrapper" style={{ marginBottom: '1.5rem', position: 'relative' }}>
+                            <label className="squadrons-label" style={{ fontSize: '10px', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block' }}>
+                                {isRtl ? 'السنة الدراسية الجديدة' : 'NOUVELLE ANNÉE SCOLAIRE'}
+                            </label>
+                            <div
+                                onClick={() => setIsRecreateYearDropdownOpen(!isRecreateYearDropdownOpen)}
+                                className="squadrons-dropdown-toggle"
+                            >
+                                <div className="squadrons-dropdown-content">
+                                    <BookOpen className="squadrons-dropdown-icon-left" />
+                                    <span className="squadrons-dropdown-text">
+                                        {recreateYear}
+                                    </span>
+                                </div>
+                                <ChevronDown className={`squadrons-dropdown-chevron ${isRecreateYearDropdownOpen ? 'open' : ''}`} />
+                            </div>
+
+                            {isRecreateYearDropdownOpen && (
+                                <div className="squadrons-dropdown-menu" style={{ zIndex: 1000, bottom: 'auto', top: '100%', width: '100%' }}>
+                                    {anneesScolaires.map((annee) => (
+                                        <div
+                                            key={annee}
+                                             className={`squadrons-dropdown-item ${recreateYear === annee ? 'selected' : ''}`}
+                                             onClick={() => {
+                                                 setRecreateYear(annee);
+                                                 setIsRecreateYearDropdownOpen(false);
+                                             }}
+                                         >
+                                             <span className={`squadrons-dropdown-item-text ${recreateYear === annee ? 'selected' : 'unselected'}`}>
+                                                 {annee}
+                                             </span>
+                                             {recreateYear === annee && <div className="squadrons-dropdown-dot"></div>}
+                                         </div>
+                                     ))}
+                                 </div>
+                             )}
+                         </div>
+
+                         <div className={`confirmation-modal-actions ${isRtl ? 'rtl' : ''}`}>
+                             <button
+                                 onClick={() => setIsRecreateModalOpen(false)}
+                                 className="confirmation-modal-btn-cancel"
+                             >
+                                 {t('common.cancel')}
+                             </button>
+                             <button
+                                 onClick={handleRecreateClasses}
+                                 className="confirmation-modal-btn-confirm"
+                                 style={{ background: 'rgb(245, 158, 11)', borderColor: 'rgb(245, 158, 11)' }}
+                             >
+                                 {isRtl ? 'تأكيد الانتقال' : 'Transitionner'}
+                             </button>
+                         </div>
+
+                         <button
+                             onClick={() => setIsRecreateModalOpen(false)}
+                             className="confirmation-modal-close-btn"
+                         >
+                             <X className="confirmation-modal-close-icon" />
+                         </button>
+                     </div>
+                 </div>,
+                 document.body
+             )}
 
             <GroupModal
                 isOpen={isGroupModalOpen}
