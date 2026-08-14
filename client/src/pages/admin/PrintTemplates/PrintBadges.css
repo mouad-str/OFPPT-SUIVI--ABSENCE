@@ -1,0 +1,259 @@
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .print-badges-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+    }
+}
+
+.print-badges-container {
+    min-height: 100vh;
+    background-color: #f3f4f6;
+    padding: 2rem;
+}
+
+.print-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 1rem 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.print-info-badge {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #0A5593;
+    background-color: #ebf5ff;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-print-action {
+    background-color: #0A5593;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-print-action:hover {
+    background-color: #084373;
+}
+
+.btn-close-action {
+    background-color: #e5e7eb;
+    color: #4b5563;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-close-action:hover {
+    background-color: #d1d5db;
+}
+
+.badges-print-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.badge-card-print {
+    background: white;
+    border: 1.5px dashed #d1d5db;
+    border-radius: 12px;
+    width: 380px;
+    height: 220px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    page-break-inside: avoid;
+    position: relative;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1f2937;
+}
+
+.badge-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 0.5rem;
+}
+
+.header-logo-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.badge-org-title {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #0a5593;
+    letter-spacing: 0.05em;
+    line-height: 1.1;
+}
+
+.badge-org-subtitle {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #f59e0b;
+    letter-spacing: 0.02em;
+}
+
+.badge-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #10b981;
+}
+
+.badge-card-body {
+    display: flex;
+    flex: 1;
+    padding: 0.75rem 0;
+    gap: 1rem;
+    align-items: center;
+}
+
+.badge-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.detail-row {
+    display: flex;
+    font-size: 0.75rem;
+}
+
+.detail-lbl {
+    color: #6b7280;
+    font-weight: bold;
+    width: 50px;
+    flex-shrink: 0;
+}
+
+.detail-val {
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.font-bold {
+    font-weight: bold;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.badge-campus-tag {
+    margin-top: auto;
+    font-size: 0.55rem;
+    font-weight: 900;
+    color: #0A5593;
+    background-color: #ebf5ff;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    width: fit-content;
+    letter-spacing: 0.05em;
+}
+
+.badge-qr-section {
+    width: 90px;
+    height: 90px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9fafb;
+    flex-shrink: 0;
+}
+
+.badge-qr-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.badge-qr-placeholder {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    font-weight: bold;
+}
+
+.badge-card-footer {
+    border-top: 1.5px solid #f3f4f6;
+    padding-top: 0.4rem;
+    font-size: 0.6rem;
+    font-weight: bold;
+    color: #9ca3af;
+    text-align: center;
+    letter-spacing: 0.05em;
+}
+
+.print-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-top: 4px solid #0A5593;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.print-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    text-align: center;
+}

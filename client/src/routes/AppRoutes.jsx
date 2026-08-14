@@ -23,6 +23,8 @@ import Salles from '../pages/admin/Salles/Salles';
 import AdminJustifications from '../pages/admin/Justifications/Justifications';
 import PrintBlame from '../pages/admin/PrintTemplates/PrintBlame';
 import PrintAttendance from '../pages/admin/PrintTemplates/PrintAttendance';
+import PrintBadges from '../pages/admin/PrintTemplates/PrintBadges';
+import Timetable from '../pages/admin/Timetable/Timetable';
 
 // Formateur Pages
 import FormateurDashboard from '../pages/formateur/Dashboard/Dashboard';
@@ -142,6 +144,15 @@ export const AppRoutes = () => {
                 }
             />
 
+            <Route
+                path="/admin/print-badges/:groupId"
+                element={
+                    <ProtectedRoute roles={['admin']}>
+                        <PrintBadges />
+                    </ProtectedRoute>
+                }
+            />
+
             {/* Admin Routes */}
             <Route
                 path="/admin/*"
@@ -158,6 +169,7 @@ export const AppRoutes = () => {
                                 <Route path="penalty-decision" element={<PenaltyDecision />} />
                                 <Route path="filieres" element={<Filiere />} />
                                 <Route path="salles" element={<Salles />} />
+                                <Route path="schedule" element={<Timetable />} />
                                 <Route path="profile" element={<Profile />} />
                             </Routes>
                         </DashboardLayout>

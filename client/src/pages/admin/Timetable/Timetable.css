@@ -1,0 +1,446 @@
+.timetable-page {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: calc(100vh - 100px);
+}
+
+.timetable-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.timetable-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.timetable-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 0 0;
+    max-width: 600px;
+}
+
+.btn-add-slot {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(10, 85, 147, 0.2);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-add-slot:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* Filter Bar */
+.timetable-filter-bar {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.filter-icon {
+    color: var(--text-muted);
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+}
+
+.filter-select-type, .filter-select-val {
+    background-color: var(--background);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.filter-select-type:focus, .filter-select-val:focus {
+    border-color: var(--primary);
+}
+
+/* Grid Layout */
+.timetable-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    flex: 1;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.timetable-col {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    height: 600px;
+}
+
+.col-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.col-day-title {
+    font-size: 0.875rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.col-slot-count {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    background-color: var(--background);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.col-body {
+    padding: 0.75rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.slot-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border: 1.5px dashed var(--border);
+    border-radius: 0.75rem;
+}
+
+/* Slot Card styling */
+.slot-card {
+    background-color: var(--background);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.75rem;
+    padding: 0.85rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slot-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--primary);
+}
+
+.slot-time-badge {
+    background-color: var(--color-active-bg);
+    color: var(--primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: fit-content;
+}
+
+.slot-subject {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0.25rem 0;
+}
+
+.slot-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.slot-info-item strong {
+    color: var(--text-primary);
+}
+
+.slot-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+    justify-content: flex-end;
+}
+
+.slot-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.slot-btn.edit {
+    color: var(--primary);
+}
+
+.slot-btn.edit:hover {
+    background-color: var(--color-active-bg);
+}
+
+.slot-btn.delete {
+    color: var(--error);
+}
+
+.slot-btn.delete:hover {
+    background-color: var(--error-light);
+}
+
+/* Modal styling */
+.timetable-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: flex-end;
+    z-index: 110000;
+}
+
+.timetable-modal-content {
+    background: var(--surface);
+    width: 100%;
+    max-width: 460px;
+    height: 100%;
+    box-shadow: -10px 0 25px rgba(0,0,0,0.15);
+    display: flex;
+    flex-direction: column;
+    animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    background-color: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+/* Error Banner in Modal */
+.modal-error-banner {
+    background-color: var(--error-light);
+    border-left: 4px solid var(--error);
+    padding: 1rem;
+    margin: 1.5rem 2rem 0 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: var(--error);
+    font-size: 0.8rem;
+    font-weight: bold;
+    line-height: 1.4;
+}
+
+.modal-error-banner svg {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.modal-form {
+    padding: 1.5rem 2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+}
+
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-field label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-field input, .form-field select {
+    background-color: var(--background);
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-field input:focus, .form-field select:focus {
+    border-color: var(--primary);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+}
+
+.btn-cancel {
+    background-color: var(--background);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background-color: var(--surface-hover);
+}
+
+.btn-submit {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 2;
+    box-shadow: 0 4px 10px rgba(10, 85, 147, 0.2);
+    transition: all 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Spinner */
+.timetable-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+}
+
+/* Responsive grid changes for tablet / mobile viewports */
+@media (max-width: 1200px) {
+    .timetable-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+    .timetable-col {
+        height: auto;
+        min-height: 450px;
+    }
+}
+
+@media (max-width: 768px) {
+    .timetable-grid {
+        grid-template-columns: 1fr;
+    }
+    .timetable-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

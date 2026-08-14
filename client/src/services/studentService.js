@@ -142,6 +142,11 @@ export const studentService = {
         return response.data;
     },
 
+    getAdminUsersByGroup: async (groupId) => {
+        const response = await api.get(`/admin/users/by-group/${groupId}`);
+        return response.data;
+    },
+
     getPendingJustifications: async () => {
         const response = await api.get('/admin/justifications');
         return response.data;

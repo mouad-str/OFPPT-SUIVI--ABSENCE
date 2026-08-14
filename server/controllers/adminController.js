@@ -1406,3 +1406,166 @@ exports.reviewJustification = async (req, res, next) => {
         next(err);
     }
 };
+
+exports.getAdminSchedule = async (req, res, next) => {
+    try {
+        const [slots] = await pool.query(`
+            SELECT t.id, t.formateur_id, f.name as formateur_name, t.group_id, t.day, t.time, t.salle_id, s.nom as salle_name, t.subject
+            FROM timetables t
+            LEFT JOIN formateurs f ON t.formateur_id = f.id
+            LEFT JOIN salles s ON t.salle_id = s.id
+            ORDER BY FIELD(t.day, 'LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI'), t.time ASC
+        `);
+        res.json({ schedule: slots });
+    } catch (err) {
+        console.error("GET ADMIN SCHEDULE ERROR:", err);
+        next(err);
+    }
+};
+
+exports.createSchedule = async (req, res, next) => {
+    try {
+        const { formateur_id, group_id, day, time, salle_id, subject } = req.body;
+
+        if (!formateur_id || !group_id || !day || !time || !salle_id || !subject) {
+            return res.status(400).json({ message: 'Tous les champs sont requis.' });
+        }
+
+        const parseMinutes = (tStr) => {
+            const [h, m] = tStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+        
+        const timeParts = time.split('-').map(tStr => tStr.trim());
+        if (timeParts.length !== 2) {
+            return res.status(400).json({ message: 'Format de temps invalide. Utilisez HH:MM - HH:MM' });
+        }
+        const [newStart, newEnd] = timeParts.map(parseMinutes);
+
+        // Fetch existing slots on the same day for overlap checking
+        const [existingSlots] = await pool.query(`
+            SELECT t.id, t.formateur_id, f.name as formateur_name, t.group_id, t.time, t.salle_id, s.nom as salle_name
+            FROM timetables t
+            LEFT JOIN formateurs f ON t.formateur_id = f.id
+            LEFT JOIN salles s ON t.salle_id = s.id
+            WHERE t.day = ?
+        `, [day]);
+
+        for (const slot of existingSlots) {
+            const slotParts = slot.time.split('-').map(tStr => tStr.trim());
+            if (slotParts.length === 2) {
+                const [start, end] = slotParts.map(parseMinutes);
+                const overlaps = (newStart < end && newEnd > start);
+
+                if (overlaps) {
+                    if (Number(slot.formateur_id) === Number(formateur_id)) {
+                        return res.status(400).json({ 
+                            message: `Conflit Formateur : Le formateur ${slot.formateur_name} enseigne déjà au groupe ${slot.group_id} sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                    if (Number(slot.salle_id) === Number(salle_id)) {
+                        return res.status(400).json({ 
+                            message: `Conflit Salle : La salle ${slot.salle_name} est déjà réservée par le groupe ${slot.group_id} sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                    if (slot.group_id === group_id) {
+                        return res.status(400).json({ 
+                            message: `Conflit Groupe : Le groupe ${group_id} a déjà cours sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                }
+            }
+        }
+
+        const [result] = await pool.query(`
+            INSERT INTO timetables (formateur_id, group_id, day, time, salle_id, subject)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [formateur_id, group_id, day, time, salle_id, subject]);
+
+        res.status(201).json({ 
+            message: 'Créneau ajouté avec succès.', 
+            slot: { id: result.insertId, formateur_id, group_id, day, time, salle_id, subject } 
+        });
+    } catch (err) {
+        console.error("CREATE SCHEDULE ERROR:", err);
+        next(err);
+    }
+};
+
+exports.updateSchedule = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { formateur_id, group_id, day, time, salle_id, subject } = req.body;
+
+        if (!formateur_id || !group_id || !day || !time || !salle_id || !subject) {
+            return res.status(400).json({ message: 'Tous les champs sont requis.' });
+        }
+
+        const parseMinutes = (tStr) => {
+            const [h, m] = tStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        const timeParts = time.split('-').map(tStr => tStr.trim());
+        if (timeParts.length !== 2) {
+            return res.status(400).json({ message: 'Format de temps invalide. Utilisez HH:MM - HH:MM' });
+        }
+        const [newStart, newEnd] = timeParts.map(parseMinutes);
+
+        const [existingSlots] = await pool.query(`
+            SELECT t.id, t.formateur_id, f.name as formateur_name, t.group_id, t.time, t.salle_id, s.nom as salle_name
+            FROM timetables t
+            LEFT JOIN formateurs f ON t.formateur_id = f.id
+            LEFT JOIN salles s ON t.salle_id = s.id
+            WHERE t.day = ? AND t.id != ?
+        `, [day, id]);
+
+        for (const slot of existingSlots) {
+            const slotParts = slot.time.split('-').map(tStr => tStr.trim());
+            if (slotParts.length === 2) {
+                const [start, end] = slotParts.map(parseMinutes);
+                const overlaps = (newStart < end && newEnd > start);
+
+                if (overlaps) {
+                    if (Number(slot.formateur_id) === Number(formateur_id)) {
+                        return res.status(400).json({ 
+                            message: `Conflit Formateur : Le formateur ${slot.formateur_name} enseigne déjà au groupe ${slot.group_id} sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                    if (Number(slot.salle_id) === Number(salle_id)) {
+                        return res.status(400).json({ 
+                            message: `Conflit Salle : La salle ${slot.salle_name} est déjà réservée par le groupe ${slot.group_id} sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                    if (slot.group_id === group_id) {
+                        return res.status(400).json({ 
+                            message: `Conflit Groupe : Le groupe ${group_id} a déjà cours sur ce créneau (${slot.time}) !` 
+                        });
+                    }
+                }
+            }
+        }
+
+        await pool.query(`
+            UPDATE timetables 
+            SET formateur_id = ?, group_id = ?, day = ?, time = ?, salle_id = ?, subject = ?
+            WHERE id = ?
+        `, [formateur_id, group_id, day, time, salle_id, subject, id]);
+
+        res.json({ message: 'Créneau modifié avec succès.' });
+    } catch (err) {
+        console.error("UPDATE SCHEDULE ERROR:", err);
+        next(err);
+    }
+};
+
+exports.deleteSchedule = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        await pool.query('DELETE FROM timetables WHERE id = ?', [id]);
+        res.json({ message: 'Créneau supprimé avec succès.' });
+    } catch (err) {
+        console.error("DELETE SCHEDULE ERROR:", err);
+        next(err);
+    }
+};

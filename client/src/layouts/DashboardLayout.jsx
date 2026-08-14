@@ -169,6 +169,7 @@ const DashboardLayout = ({ children }) => {
                     { icon: FileText, label: t('nav.reports'), path: '/admin/reports' },
                     { icon: ClipboardCheck, label: t('nav.absence_registry'), path: '/admin/absence-registry' },
                     { icon: FileText, label: t('nav.justifications') || 'Justifications', path: '/admin/justifications' },
+                    { icon: Calendar, label: t('nav.timetable') || 'Emploi du Temps', path: '/admin/schedule' },
                     { icon: User, label: t('nav.profile'), path: '/admin/profile' },
                 ];
             case 'formateur':

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle } from 'lucide-react';
+import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer } from 'lucide-react';
 import { GroupModal, ConfirmationModal } from '../../../components/Modals';
 import { useNotification } from '../../../hooks/useNotification';
 import { useTranslation } from 'react-i18next';
@@ -232,6 +232,17 @@ const Squadrons = () => {
                                         <Users className="squadrons-card-icon" />
                                     </div>
                                     <div className="squadrons-card-actions">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.open(`/admin/print-badges/${grp.id}`, '_blank');
+                                            }}
+                                            className="squadrons-action-btn print"
+                                            style={{ color: '#0A5593', background: 'rgba(10,85,147,0.05)' }}
+                                            title="Imprimer les Badges QR"
+                                        >
+                                            <Printer className="squadrons-action-icon" style={{ width: '1rem', height: '1rem' }} />
+                                        </button>
                                         <button onClick={() => handleFlip(grp)} className="squadrons-action-btn edit">
                                             <Edit3 className="squadrons-action-icon" />
                                         </button>
