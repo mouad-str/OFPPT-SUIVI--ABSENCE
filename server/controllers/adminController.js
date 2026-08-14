@@ -83,6 +83,44 @@ exports.getDashboardSummary = async (req, res) => {
             });
         }
 
+        // 1. Recent reports
+        const [recentReports] = await pool.query(`
+            SELECT r.id, r.group_id, r.created_at, f.name as formateur_name, r.subject,
+                   (SELECT COUNT(*) FROM report_attendance ra WHERE ra.report_id = r.id AND ra.status = 'ABSENT') as absences_count,
+                   (SELECT COUNT(*) FROM report_attendance ra WHERE ra.report_id = r.id AND ra.status = 'PRESENT') as total_students
+            FROM reports r
+            JOIN formateurs f ON r.formateur_id = f.id
+            ORDER BY r.created_at DESC, r.id DESC
+            LIMIT 4
+        `);
+
+        // 2. Top absent groups
+        const [topAbsentGroups] = await pool.query(`
+            SELECT r.group_id, 
+                   COUNT(CASE WHEN ra.status = 'ABSENT' THEN 1 END) as total_absences,
+                   ROUND((COUNT(CASE WHEN ra.status = 'ABSENT' THEN 1 END) / (COUNT(DISTINCT r.id) * IFNULL(g_count.cnt, 1))) * 100) as absence_rate
+            FROM reports r
+            LEFT JOIN report_attendance ra ON r.id = ra.report_id
+            LEFT JOIN (SELECT group_id, COUNT(*) as cnt FROM stagiaires GROUP BY group_id) as g_count ON r.group_id = g_count.group_id
+            GROUP BY r.group_id
+            ORDER BY total_absences DESC
+            LIMIT 5
+        `);
+
+        // 3. Warnings statistics
+        const [warningsStats] = await pool.query(`
+            SELECT penalty_type, COUNT(*) as count 
+            FROM suivieDisipline 
+            GROUP BY penalty_type
+        `);
+
+        // 4. Pending justifications count
+        const [[{ pending_justifications_count }]] = await pool.query(`
+            SELECT COUNT(*) as pending_justifications_count 
+            FROM justification_requests 
+            WHERE status = 'PENDING'
+        `);
+
         res.json({
             summary: {
                 total_students,
@@ -94,7 +132,11 @@ exports.getDashboardSummary = async (req, res) => {
                 distribution: [
                     { status: 'PRESENT', count: (total_theoretical || 0) - (total_absences || 0) },
                     { status: 'ABSENT', count: total_absences || 0 }
-                ]
+                ],
+                recent_reports: recentReports,
+                top_absent_groups: topAbsentGroups,
+                warnings_stats: warningsStats,
+                pending_justifications_count
             }
         });
     } catch (err) {
@@ -1293,3 +1335,72 @@ const updateGroupActiveStatus = async (groupId) => {
 };
 
 exports.updateGroupActiveStatus = updateGroupActiveStatus;
+
+exports.getPendingJustifications = async (req, res, next) => {
+    try {
+        const [requests] = await pool.query(`
+            SELECT jr.id, jr.student_id, s.name as student_name, s.group_id,
+                   jr.date_absence, jr.subject, jr.reason, jr.file_path, jr.status, jr.created_at
+            FROM justification_requests jr
+            JOIN stagiaires s ON jr.student_id = s.NumInscription
+            WHERE jr.status = 'PENDING'
+            ORDER BY jr.created_at DESC
+        `);
+        res.json({ justifications: requests });
+    } catch (err) {
+        console.error("GET PENDING JUSTIFICATIONS ERROR:", err);
+        next(err);
+    }
+};
+
+exports.reviewJustification = async (req, res, next) => {
+    try {
+        const { requestId, action } = req.body;
+        if (!requestId || !action) {
+            return res.status(400).json({ message: 'requestId et action requis.' });
+        }
+
+        // 1. Fetch justification details
+        const [[request]] = await pool.query(
+            'SELECT student_id, report_id, status FROM justification_requests WHERE id = ?',
+            [requestId]
+        );
+
+        if (!request) {
+            return res.status(404).json({ message: 'Demande de justification non trouvée.' });
+        }
+
+        if (request.status !== 'PENDING') {
+            return res.status(400).json({ message: 'Cette demande a déjà été traitée.' });
+        }
+
+        const newStatus = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+
+        // 2. Update status in DB
+        await pool.query('UPDATE justification_requests SET status = ? WHERE id = ?', [newStatus, requestId]);
+
+        // 3. Update report_attendance record
+        if (action === 'APPROVE') {
+            await pool.query(
+                'UPDATE report_attendance SET Justifier = "JUSTIFIÉ" WHERE student_id = ? AND report_id = ?',
+                [request.student_id, request.report_id]
+            );
+        } else {
+            await pool.query(
+                'UPDATE report_attendance SET Justifier = "NON JUSTIFIÉ" WHERE student_id = ? AND report_id = ?',
+                [request.student_id, request.report_id]
+            );
+        }
+
+        // 4. Query student's group to update active status
+        const [[student]] = await pool.query('SELECT group_id FROM stagiaires WHERE NumInscription = ?', [request.student_id]);
+        if (student && student.group_id) {
+            await updateGroupActiveStatus(student.group_id);
+        }
+
+        res.json({ message: `Justification ${action === 'APPROVE' ? 'approuvée' : 'rejetée'} avec succès.` });
+    } catch (err) {
+        console.error("REVIEW JUSTIFICATION ERROR:", err);
+        next(err);
+    }
+};

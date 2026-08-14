@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const formateurRoutes = require('./routes/formateurRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 const errorMiddleware = require('./middlewares/errorMiddleware');
 
 
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/formateur', formateurRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/student', studentRoutes);
 
 
 // Central Error Response Node

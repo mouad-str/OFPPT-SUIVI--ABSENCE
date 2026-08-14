@@ -20,6 +20,7 @@ import PenaltyDecision from '../pages/admin/PenaltyDecision/PenaltyDecision';
 import StudentProfile from '../pages/admin/StudentProfile/StudentProfile';
 import Filiere from '../pages/admin/Filiere/Filiere';
 import Salles from '../pages/admin/Salles/Salles';
+import AdminJustifications from '../pages/admin/Justifications/Justifications';
 import PrintBlame from '../pages/admin/PrintTemplates/PrintBlame';
 import PrintAttendance from '../pages/admin/PrintTemplates/PrintAttendance';
 
@@ -28,6 +29,9 @@ import FormateurDashboard from '../pages/formateur/Dashboard/Dashboard';
 import Divisions from '../pages/formateur/Divisions/Divisions';
 import ClassDossier from '../pages/formateur/ClassDossier/ClassDossier';
 import ForceUpdatePassword from '../pages/formateur/ForceUpdatePassword/ForceUpdatePassword';
+
+// Student Pages
+import Justify from '../pages/student/Justify/Justify';
 
 const ProtectedRoute = ({ children, roles }) => {
     const { user, loading, skipPasswordUpdate } = useAuth();
@@ -79,6 +83,7 @@ export const AppRoutes = () => {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/student/justify" element={<Justify />} />
             <Route
                 path="/scanner"
                 element={
@@ -149,6 +154,7 @@ export const AppRoutes = () => {
                                 <Route path="groups" element={<Squadrons />} />
                                 <Route path="reports" element={<Rapports />} />
                                 <Route path="absence-registry" element={<AbsenceRegistry />} />
+                                <Route path="justifications" element={<AdminJustifications />} />
                                 <Route path="penalty-decision" element={<PenaltyDecision />} />
                                 <Route path="filieres" element={<Filiere />} />
                                 <Route path="salles" element={<Salles />} />

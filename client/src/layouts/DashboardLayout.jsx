@@ -120,6 +120,7 @@ const DashboardLayout = ({ children }) => {
                     { icon: Layers, label: t('nav.groups'), path: '/admin/groups' },
                     { icon: FileText, label: t('nav.reports'), path: '/admin/reports' },
                     { icon: ClipboardCheck, label: t('nav.absence_registry'), path: '/admin/absence-registry' },
+                    { icon: FileText, label: t('nav.justifications') || 'Justifications', path: '/admin/justifications' },
                     { icon: User, label: t('nav.profile'), path: '/admin/profile' },
                 ];
             case 'formateur':

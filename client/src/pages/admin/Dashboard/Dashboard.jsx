@@ -6,7 +6,7 @@ import {
     LayoutDashboard, ChevronDown, AlertTriangle, Clock, Zap,
     UserPlus, BookOpen, BarChart3, Download, ChevronRight
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import studentService from '../../../services/studentService';
 import reportService from '../../../services/reportService';
@@ -66,6 +66,8 @@ const AdminDashboard = () => {
     const [criticalStudents, setCriticalStudents] = useState([]);
     const [recentReports, setRecentReports] = useState([]);
     const [topAbsentGroups, setTopAbsentGroups] = useState([]);
+    const [warningsData, setWarningsData] = useState([]);
+    const [pendingJustificationsCount, setPendingJustificationsCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -119,6 +121,21 @@ const AdminDashboard = () => {
 
             setRecentReports(summary.recent_reports || []);
             setTopAbsentGroups(summary.top_absent_groups || []);
+            setPendingJustificationsCount(summary.pending_justifications_count || 0);
+
+            if (summary.warnings_stats) {
+                const colors = {
+                    'Blâme 1': '#f59e0b',
+                    'Blâme 2': '#f97316',
+                    'Blâme 3': '#ef4444',
+                    'Avertissement': '#eab308'
+                };
+                setWarningsData(summary.warnings_stats.map(item => ({
+                    name: item.penalty_type,
+                    count: item.count,
+                    color: colors[item.penalty_type] || 'var(--color-primary-blue)'
+                })));
+            }
 
             // All critical students with absences > 0, not just ABSENCE justifier
             const critical = users
@@ -187,6 +204,25 @@ const AdminDashboard = () => {
                     {t('dashboard.sync_button')}
                 </button>
             </div>
+
+            {/* Justifications Notification Banner */}
+            {pendingJustificationsCount > 0 && (
+                <div className="dashboard-justification-banner fade-up" onClick={() => navigate('/admin/justifications')}>
+                    <div className="banner-left">
+                        <div className="banner-icon-wrapper">
+                            <Clock size={16} className="animate-pulse" />
+                        </div>
+                        <div>
+                            <h4 className="banner-title">Demandes de Justification en Attente</h4>
+                            <p className="banner-subtitle">Vous avez {pendingJustificationsCount} document(s) justificatif(s) soumis par les stagiaires à valider.</p>
+                        </div>
+                    </div>
+                    <button className="banner-btn">
+                        Traiter maintenant
+                        <ChevronRight size={14} />
+                    </button>
+                </div>
+            )}
 
             {/* Quick Actions */}
             <div className="quick-actions-bar">
@@ -428,6 +464,68 @@ const AdminDashboard = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+            </div>
+
+            {/* Analytics Grid */}
+            <div className="charts-grid mt-6">
+                <div className="chart-panel-main">
+                    <div className="chart-header">
+                        <div className="chart-title-wrapper">
+                            <div className="chart-title-indicator" style={{ backgroundColor: '#ef4444' }}></div>
+                            <h3 className="chart-title">Absences par Groupe (Palmarès)</h3>
+                        </div>
+                    </div>
+                    <div className="chart-area" style={{ height: '300px' }}>
+                        {loading ? <Skeleton className="skeleton-chart" /> : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={topAbsentGroups.length > 0 ? topAbsentGroups : [{ group_id: 'Aucun', total_absences: 0 }]}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="group_id" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
+                                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: '900' }} formatter={(v) => [v, 'Total Absences']} />
+                                    <Bar dataKey="total_absences" fill="#f97316" radius={[8, 8, 0, 0]} barSize={40}>
+                                        {(topAbsentGroups.length > 0 ? topAbsentGroups : [{ group_id: 'Aucun', total_absences: 0 }]).map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : index === 1 ? '#f97316' : '#eab308'} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
+                </div>
+
+                <div className="distribution-panel ista-panel">
+                    <div className="chart-title-wrapper mb-10">
+                        <div className="chart-title-indicator" style={{ backgroundColor: 'royalblue' }}></div>
+                        <h3 className="chart-title distribution-title">Répartition des Sanctions</h3>
+                    </div>
+                    <div className="chart-area" style={{ height: '300px' }}>
+                        {loading ? <Skeleton className="skeleton-chart" /> : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={warningsData.length > 0 ? warningsData : [
+                                    { name: 'Avertissement', count: 0, color: '#eab308' },
+                                    { name: 'Blâme 1', count: 0, color: '#f59e0b' },
+                                    { name: 'Blâme 2', count: 0, color: '#f97316' },
+                                    { name: 'Blâme 3', count: 0, color: '#ef4444' }
+                                ]}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
+                                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: '900' }} formatter={(v) => [v, 'Total Emis']} />
+                                    <Bar dataKey="count" fill="royalblue" radius={[8, 8, 0, 0]} barSize={45}>
+                                        {(warningsData.length > 0 ? warningsData : [
+                                            { name: 'Avertissement', count: 0, color: '#eab308' },
+                                            { name: 'Blâme 1', count: 0, color: '#f59e0b' },
+                                            { name: 'Blâme 2', count: 0, color: '#f97316' },
+                                            { name: 'Blâme 3', count: 0, color: '#ef4444' }
+                                        ]).map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </div>
             </div>

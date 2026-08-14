@@ -140,6 +140,16 @@ export const studentService = {
     getFormateurUsersByGroup: async (groupId) => {
         const response = await api.get(`/formateur/users/by-group/${groupId}`);
         return response.data;
+    },
+
+    getPendingJustifications: async () => {
+        const response = await api.get('/admin/justifications');
+        return response.data;
+    },
+
+    reviewJustification: async (requestId, action) => {
+        const response = await api.post('/admin/justify-review', { requestId, action });
+        return response.data;
     }
 };
 
