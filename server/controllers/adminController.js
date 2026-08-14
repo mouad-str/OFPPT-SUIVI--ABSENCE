@@ -172,9 +172,13 @@ exports.createGroup = async (req, res, next) => {
                 await pool.query('INSERT IGNORE INTO groups_supervisors (group_id, formateur_id) VALUES (?, ?)', [id, user.id]);
                 // Ensure notification only if admin users table exists or handle formateur notification safely
                 try {
-                    await pool.query(
-                        'INSERT INTO notifications (user_id, type, category, title, message) VALUES (?, ?, ?, ?, ?)',
-                        [user.id, 'message', 'PLANNING', 'Nouveau Groupe Assigné', `Vous avez été assigné comme superviseur pour le groupe ${id}.`]
+                    const { createNotification } = require('./notificationController');
+                    await createNotification(
+                        user.id,
+                        'message',
+                        'PLANNING',
+                        'Nouveau Groupe Assigné',
+                        `Vous avez été assigné comme superviseur pour le groupe ${id}.`
                     );
                 } catch (err) { }
             }
@@ -380,15 +384,13 @@ exports.createUser = async (req, res, next) => {
             // Notify Formateurs of the group
             const [supervisors] = await pool.query('SELECT formateur_id FROM groups_supervisors WHERE group_id = ?', [group_id]);
             for (const supervisor of supervisors) {
-                await pool.query(
-                    'INSERT INTO notifications (user_id, type, category, title, message) VALUES (?, ?, ?, ?, ?)',
-                    [
-                        supervisor.formateur_id,
-                        'message',
-                        'STAGIAIRE',
-                        'Nouveau Stagiaire',
-                        `Le stagiaire ${name} a été ajouté au groupe ${group_id}.`
-                    ]
+                const { createNotification } = require('./notificationController');
+                await createNotification(
+                    supervisor.formateur_id,
+                    'message',
+                    'STAGIAIRE',
+                    'Nouveau Stagiaire',
+                    `Le stagiaire ${name} a été ajouté au groupe ${group_id}.`
                 );
             }
 
@@ -1316,15 +1318,15 @@ const updateGroupActiveStatus = async (groupId) => {
                 });
 
                 // Insert notifications for admins
+                const { createNotification } = require('./notificationController');
                 const [admins] = await pool.query('SELECT id FROM admins');
                 for (const admin of admins) {
-                    await pool.query(
-                        'INSERT INTO notifications (user_id, type, category, title, message) VALUES (?, "alert", "DISCIPLINE", ?, ?)',
-                        [
-                            admin.id,
-                            `Pénalité automatique : ${st.name}`,
-                            `Le stagiaire ${st.name} (ID: ${st.NumInscription}) s'est vu attribuer un ${newBlame} suite à ${abs_count} absences non justifiées.`
-                        ]
+                    await createNotification(
+                        admin.id,
+                        'alert',
+                        'DISCIPLINE',
+                        `Pénalité automatique : ${st.name}`,
+                        `Le stagiaire ${st.name} (ID: ${st.NumInscription}) s'est vu attribuer un ${newBlame} suite à ${abs_count} absences non justifiées.`
                     );
                 }
             }

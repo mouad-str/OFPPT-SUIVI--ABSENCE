@@ -85,17 +85,15 @@ exports.submitReport = async (req, res) => {
         }
 
         // 3. Create notification for Admin(s)
+        const { createNotification } = require('./notificationController');
         const [admins] = await pool.query('SELECT id FROM admins');
         for (const admin of admins) {
-            await pool.query(
-                'INSERT INTO notifications (user_id, type, category, title, message) VALUES (?, ?, ?, ?, ?)',
-                [
-                    admin.id,
-                    'message',
-                    'RAPPORT',
-                    `Nouveau rapport : ${group_id}`,
-                    `Le formateur ${req.user.name} a soumis le rapport de présence pour le module ${subject}.`
-                ]
+            await createNotification(
+                admin.id,
+                'message',
+                'RAPPORT',
+                `Nouveau rapport : ${group_id}`,
+                `Le formateur ${req.user.name} a soumis le rapport de présence pour le module ${subject}.`
             );
         }
 

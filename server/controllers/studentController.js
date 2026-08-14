@@ -83,16 +83,16 @@ exports.submitJustification = async (req, res, next) => {
         `, [studentId, absence.report_id, absence.date, absence.subject, reason || '', fileRelativePath]);
 
         // 4. Create admin notification
+        const { createNotification } = require('./notificationController');
         const [admins] = await pool.query('SELECT id FROM admins');
         for (const admin of admins) {
-            await pool.query(`
-                INSERT INTO notifications (user_id, type, category, title, message)
-                VALUES (?, 'request', 'JUSTIFICATION', ?, ?)
-            `, [
+            await createNotification(
                 admin.id,
+                'request',
+                'JUSTIFICATION',
                 `Justification reçue : ${absence.student_name}`,
                 `Le stagiaire ${absence.student_name} a soumis un justificatif pour son absence du ${new Date(absence.date).toLocaleDateString('fr-FR')} (${absence.subject}).`
-            ]);
+            );
         }
 
         res.status(201).json({ message: 'Justificatif soumis avec succès. En attente de validation.' });

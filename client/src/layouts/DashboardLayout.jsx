@@ -22,6 +22,7 @@ const DashboardLayout = ({ children }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
+    const [liveToast, setLiveToast] = useState(null);
 
     const fetchNotifications = async () => {
         try {
@@ -82,6 +83,53 @@ const DashboardLayout = ({ children }) => {
             document.documentElement.classList.remove('dark');
         }
     }, [isDark]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        console.log('[SSE] Opening stream connection...');
+        const eventSource = new EventSource('/api/notifications/stream');
+
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'ping') return;
+
+                console.log('[SSE] Received live notification:', data);
+
+                const timeStr = "A L'INSTANT";
+                const newNotification = {
+                    id: data.id,
+                    type: data.type,
+                    category: data.category,
+                    title: data.title,
+                    message: data.message,
+                    time: timeStr,
+                    read: false
+                };
+
+                setNotifications(prev => [newNotification, ...prev]);
+
+                // Show live floating toast
+                setLiveToast(newNotification);
+                setTimeout(() => {
+                    setLiveToast(prev => prev && prev.id === data.id ? null : prev);
+                }, 6000);
+            } catch (err) {
+                console.error('[SSE] Error processing live notification:', err);
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error('[SSE] EventSource connection error, closing stream:', err);
+            eventSource.close();
+        };
+
+        return () => {
+            console.log('[SSE] Closing stream connection...');
+            eventSource.close();
+        };
+    }, [user]);
 
     useEffect(() => {
         setIsMobileMenuOpen(false);
@@ -245,6 +293,21 @@ const DashboardLayout = ({ children }) => {
                     {children}
                 </div>
             </main>
+
+            {liveToast && (
+                <div className="live-toast-alert" onClick={() => { setIsNotifOpen(true); setLiveToast(null); }}>
+                    <div className="live-toast-icon-wrapper">
+                        <Bell size={18} className="animate-bounce" />
+                    </div>
+                    <div className="live-toast-content">
+                        <h5 className="live-toast-title">{liveToast.title}</h5>
+                        <p className="live-toast-message">{liveToast.message}</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); setLiveToast(null); }} className="live-toast-close">
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

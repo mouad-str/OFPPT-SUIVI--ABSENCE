@@ -4,6 +4,7 @@ const notificationController = require('../controllers/notificationController');
 const { protect } = require('../middlewares/authMiddleware');
 
 router.get('/', protect, notificationController.getNotifications);
+router.get('/stream', protect, notificationController.streamNotifications);
 router.put('/:id/read', protect, notificationController.markAsRead);
 router.put('/read-all', protect, notificationController.markAllAsRead);
 
