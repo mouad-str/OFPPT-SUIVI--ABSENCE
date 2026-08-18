@@ -3,7 +3,10 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
     Calendar,
     ChevronDown,
-    Clock
+    Clock,
+    CheckCircle2,
+    UserCheck,
+    Gavel
 } from 'lucide-react';
 import { useNotification } from '../../../hooks/useNotification';
 import { useTranslation } from 'react-i18next';
@@ -345,27 +348,36 @@ const AbsenceRegistry = () => {
                                             <span className="registry-reported-label">FORMATEUR</span>
                                         </div>
                                     </td>
-                                    <td className={`admin-td ${isRtl ? 'rtl' : 'ltr'}`}>
+                                    <td className={`p-8 ${isRtl ? 'text-left' : 'text-right'}`}>
                                         {item.status !== 'PRESENT' && (
-                                            <div className={`registry-actions-cell ${isRtl ? 'rtl' : ''}`}>
+                                            <div className={`flex items-center justify-end gap-2 transition-opacity ${isRtl ? 'flex-row-reverse' : ''}`}>
+                                                {/* Justify / Cancel justification */}
                                                 <button 
                                                     onClick={() => handleJustify(item.record_id, item.justified)}
-                                                    className={`registry-btn-action ${item.justified === 'JUSTIFIÉ' ? 'cancel-justify' : 'justify'}`}
+                                                    title={item.justified === 'JUSTIFIÉ' ? t('absence_registry.btn_cancel_justif') : t('absence_registry.btn_justify')}
+                                                    className={`p-3 border rounded-xl transition-all shadow-sm flex items-center justify-center group/btn ${item.justified === 'JUSTIFIÉ' 
+                                                        ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 hover:scale-105' 
+                                                        : 'bg-green-50 text-[var(--primary)] border-green-200 hover:bg-[var(--primary)] hover:text-white hover:scale-105'}`}
                                                 >
-                                                    {item.justified === 'JUSTIFIÉ' ? t('absence_registry.btn_cancel_justif') : t('absence_registry.btn_justify')}
+                                                    <CheckCircle2 className={`w-4.5 h-4.5 transition-transform group-hover/btn:rotate-12 ${item.justified === 'JUSTIFIÉ' ? 'fill-amber-600/10' : ''}`} />
                                                 </button>
+
+                                                {/* Correct / Mark Present (delete absence record) */}
                                                 <button 
                                                     onClick={() => handleCorrect(item.record_id)}
-                                                    className="registry-btn-action correct"
-                                                    style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                                    title={t('absence_registry.btn_correct', 'Corriger')}
+                                                    className="p-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl hover:bg-blue-600 hover:text-white hover:scale-105 transition-all shadow-sm flex items-center justify-center group/btn"
                                                 >
-                                                    {t('absence_registry.btn_correct', 'Corriger')}
+                                                    <UserCheck className="w-4.5 h-4.5 transition-transform group-hover/btn:scale-110" />
                                                 </button>
+
+                                                {/* Sanction / Penalty Decision */}
                                                 <button 
                                                     onClick={() => navigate('/admin/penalty-decision', { state: { student: item } })}
-                                                    className="registry-btn-action sanction"
+                                                    title={t('absence_registry.btn_sanction')}
+                                                    className="p-3 bg-red-50 text-red-500 border border-red-200 rounded-xl hover:bg-red-500 hover:text-white hover:scale-105 transition-all shadow-sm flex items-center justify-center group/btn"
                                                 >
-                                                    {t('absence_registry.btn_sanction')}
+                                                    <Gavel className="w-4.5 h-4.5 transition-transform group-hover/btn:-rotate-12" />
                                                 </button>
                                             </div>
                                         )}

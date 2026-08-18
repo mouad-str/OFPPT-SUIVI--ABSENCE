@@ -23,6 +23,7 @@ const DashboardLayout = ({ children }) => {
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [liveToast, setLiveToast] = useState(null);
+    const [sseStatus, setSseStatus] = useState('connecting');
 
     const fetchNotifications = async () => {
         try {
@@ -88,7 +89,13 @@ const DashboardLayout = ({ children }) => {
         if (!user) return;
 
         console.log('[SSE] Opening stream connection...');
+        setSseStatus('connecting');
         const eventSource = new EventSource('/api/notifications/stream');
+
+        eventSource.onopen = () => {
+            console.log('[SSE] Connection established successfully.');
+            setSseStatus('connected');
+        };
 
         eventSource.onmessage = (event) => {
             try {
@@ -121,8 +128,8 @@ const DashboardLayout = ({ children }) => {
         };
 
         eventSource.onerror = (err) => {
-            console.error('[SSE] EventSource connection error, closing stream:', err);
-            eventSource.close();
+            console.error('[SSE] EventSource connection error:', err);
+            setSseStatus('error');
         };
 
         return () => {
@@ -262,6 +269,18 @@ const DashboardLayout = ({ children }) => {
                     </div>
 
                     <div className={`header-right ${isRtl ? 'rtl' : ''}`}>
+                        {/* SSE Connection Status Dot */}
+                        <div className={`sse-status-indicator ${sseStatus}`} title={
+                            sseStatus === 'connected' ? 'Live Real-time Sync Connected' :
+                            sseStatus === 'connecting' ? 'Reconnecting to Live Stream...' :
+                            'Real-time Connection Offline'
+                        }>
+                            <span className="sse-status-dot"></span>
+                            <span className="sse-status-text">{sseStatus === 'connected' ? 'LIVE' : sseStatus === 'connecting' ? 'SYNC' : 'OFFLINE'}</span>
+                        </div>
+
+                        <div className="header-divider"></div>
+
                         <button onClick={toggleTheme} className="header-btn" title={t('header.theme_toggle')}>
                             {isDark ? <Sun className="header-icon" /> : <Moon className="header-icon" />}
                         </button>

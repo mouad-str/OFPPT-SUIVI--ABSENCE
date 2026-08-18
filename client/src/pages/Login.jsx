@@ -34,8 +34,9 @@ const Login = () => {
             <div className="absolute inset-0 opacity-10 pointer-events-none"
                 style={{ backgroundImage: 'url("/bg_pattern.png")', backgroundSize: 'cover' }}></div>
 
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--primary)] opacity-[0.03] blur-[120px] rounded-full -mr-48 -mt-48"></div>
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-[var(--secondary)] opacity-[0.03] blur-[120px] rounded-full -ml-48 -mb-48"></div>
+            {/* Animated Background Blobs */}
+            <div className="absolute top-10 left-10 w-96 h-96 bg-[var(--primary)] opacity-[0.12] blur-[120px] rounded-full animate-blob-pulse pointer-events-none"></div>
+            <div className="absolute bottom-10 right-10 w-96 h-96 bg-[var(--secondary)] opacity-[0.12] blur-[120px] rounded-full animate-blob-pulse animation-delay-2000 pointer-events-none"></div>
 
             <div className="w-full max-w-sm space-y-10 fade-up relative z-10">
                 <div className="text-center space-y-6">

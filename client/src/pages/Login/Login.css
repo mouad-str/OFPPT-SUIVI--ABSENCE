@@ -23,26 +23,49 @@
 /* Glow effects */
 .login-glow {
     position: absolute;
-    width: 24rem;
-    height: 24rem;
-    opacity: 0.03;
+    width: 32rem;
+    height: 32rem;
+    opacity: 0.12;
     filter: blur(120px);
     border-radius: 9999px;
     pointer-events: none;
+    transition: all 1s ease;
 }
 .login-glow-tr {
-    top: 0;
-    right: 0;
+    top: 5%;
+    right: 5%;
     background-color: var(--primary);
-    margin-right: -12rem;
-    margin-top: -12rem;
+    animation: blobPulseTR 12s infinite alternate ease-in-out;
 }
 .login-glow-bl {
-    bottom: 0;
-    left: 0;
+    bottom: 5%;
+    left: 5%;
     background-color: var(--secondary);
-    margin-left: -12rem;
-    margin-bottom: -12rem;
+    animation: blobPulseBL 12s infinite alternate ease-in-out;
+}
+
+@keyframes blobPulseTR {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    50% {
+        transform: translate(40px, -50px) scale(1.15);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+@keyframes blobPulseBL {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    50% {
+        transform: translate(-30px, 40px) scale(1.15);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
 }
 
 .login-content-wrapper {
@@ -95,12 +118,19 @@
 }
 
 .login-panel {
-    background-color: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(4px);
-    padding: 2rem;
+    background-color: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    padding: 2.25rem;
     border-radius: 1.5rem;
-    box-shadow: var(--shadow-xl);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: all 0.3s ease;
+}
+
+.dark .login-panel {
+    background-color: rgba(15, 23, 42, 0.45);
+    border-color: rgba(255, 255, 255, 0.05);
 }
 
 .login-form {
