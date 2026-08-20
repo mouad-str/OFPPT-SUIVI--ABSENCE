@@ -226,6 +226,15 @@
     transition: all 0.2s;
 }
 
+.slot-btn.duplicate {
+    color: var(--text-muted);
+}
+
+.slot-btn.duplicate:hover {
+    background-color: var(--surface-hover);
+    color: var(--primary);
+}
+
 .slot-btn.edit {
     color: var(--primary);
 }

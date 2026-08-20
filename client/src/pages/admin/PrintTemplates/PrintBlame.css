@@ -119,6 +119,23 @@
     box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     box-sizing: border-box;
     border: 1px solid #e5e7eb;
+    position: relative;
+}
+
+.letter-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 320px;
+    height: 320px;
+    background-image: url("../../../assets/OFPPT.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.05;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
 }
 
 /* Formal Header styling */

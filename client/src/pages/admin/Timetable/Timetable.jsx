@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Plus, Edit3, Trash2, Clock, MapPin, User, Users, BookOpen, AlertCircle, X, Filter } from 'lucide-react';
+import { Calendar, Plus, Edit3, Trash2, Clock, MapPin, User, Users, BookOpen, AlertCircle, X, Filter, Copy } from 'lucide-react';
 import studentService from '../../../services/studentService';
 import { useNotification } from '../../../hooks/useNotification';
 import './Timetable.css';
@@ -90,6 +90,22 @@ const Timetable = () => {
             endTime: parts[1] || '11:30',
             salle_id: slot.salle_id,
             subject: slot.subject
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleDuplicate = (slot) => {
+        setEditingSlot(null);
+        setErrorMsg(null);
+        const parts = slot.time.split('-').map(p => p.trim());
+        setFormData({
+            formateur_id: slot.formateur_id,
+            group_id: slot.group_id,
+            day: slot.day,
+            startTime: parts[0] || '08:30',
+            endTime: parts[1] || '11:30',
+            salle_id: slot.salle_id,
+            subject: `${slot.subject} (Copie)`
         });
         setIsModalOpen(true);
     };
@@ -272,6 +288,9 @@ const Timetable = () => {
                                             </div>
 
                                             <div className="slot-actions">
+                                                <button onClick={() => handleDuplicate(slot)} className="slot-btn duplicate" title="Dupliquer">
+                                                    <Copy size={12} />
+                                                </button>
                                                 <button onClick={() => openEditModal(slot)} className="slot-btn edit" title="Modifier">
                                                     <Edit3 size={12} />
                                                 </button>

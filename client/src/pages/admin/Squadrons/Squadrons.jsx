@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer } from 'lucide-react';
+import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer, ArrowUpDown, LayoutGrid, Table as TableIcon } from 'lucide-react';
 import { GroupModal, ConfirmationModal } from '../../../components/Modals';
 import { useNotification } from '../../../hooks/useNotification';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,9 @@ const Squadrons = () => {
     const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
     const [isYearFilterDropdownOpen, setIsYearFilterDropdownOpen] = useState(false);
     const [isEditDropdownOpen, setIsEditDropdownOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
+    const [sortBy, setSortBy] = useState('name-asc');
 
     const [isFiliereEditDropdownOpen, setIsFiliereEditDropdownOpen] = useState(false);
     const [isFiliereEditAutre, setIsFiliereEditAutre] = useState(false);
@@ -161,10 +164,28 @@ const Squadrons = () => {
 
     const uniqueYears = ['ALL', ...new Set(groups.map(g => g.année_scolaire).filter(Boolean))];
     
-    const filteredGroups = groups.filter(g => {
-        const matchYear = yearFilter === 'ALL' || g.année_scolaire === yearFilter;
-        return matchYear;
-    });
+    const filteredAndSortedGroups = [...groups]
+        .filter(g => {
+            const matchYear = yearFilter === 'ALL' || g.année_scolaire === yearFilter;
+            const searchLower = searchTerm.toLowerCase();
+            const matchSearch = !searchTerm || 
+                String(g.id).toLowerCase().includes(searchLower) ||
+                String(g.filiere || '').toLowerCase().includes(searchLower) ||
+                String(g.formateur || g.lead || '').toLowerCase().includes(searchLower);
+            return matchYear && matchSearch;
+        })
+        .sort((a, b) => {
+            if (sortBy === 'name-asc') {
+                return String(a.id).localeCompare(String(b.id));
+            } else if (sortBy === 'name-desc') {
+                return String(b.id).localeCompare(String(a.id));
+            } else if (sortBy === 'students-desc') {
+                const countA = a.students !== undefined && a.students !== null ? Number(a.students) : 0;
+                const countB = b.students !== undefined && b.students !== null ? Number(b.students) : 0;
+                return countB - countA;
+            }
+            return 0;
+        });
 
     return (
         <div className={`squadrons-container ${isRtl ? 'rtl' : ''}`}>
@@ -180,6 +201,35 @@ const Squadrons = () => {
                 </div>
 
                 <div className="squadrons-actions">
+                    <button onClick={() => setIsRecreateModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <AlertCircle className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />
+                        <span>{isRtl ? 'سنة دراسية جديدة' : 'NOUVELLE ANNÉE'}</span>
+                    </button>
+                    <button onClick={() => setIsGroupModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3">
+                        <Plus className="w-5 h-5" />
+                        <span>CRÉER UN GROUPE</span>
+                    </button>
+                </div>
+            </div>
+
+            <div className="squadrons-control-bar">
+                <div className="squadrons-search-wrapper">
+                    <Search className={`squadrons-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
+                    <input
+                        type="text"
+                        placeholder="Rechercher par groupe, filière..."
+                        className={`squadrons-search-input ${isRtl ? 'rtl' : 'ltr'}`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="squadrons-search-clear">
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
+
+                <div className="squadrons-controls-right">
                     <div className="squadrons-filter-wrapper">
                         <button
                             onClick={() => setIsYearFilterDropdownOpen(!isYearFilterDropdownOpen)}
@@ -208,326 +258,429 @@ const Squadrons = () => {
                         )}
                     </div>
 
-                    <button onClick={() => setIsRecreateModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                        <AlertCircle className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />
-                        <span>{isRtl ? 'سنة دراسية جديدة' : 'NOUVELLE ANNÉE'}</span>
-                    </button>
-                    <button onClick={() => setIsGroupModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3">
-                        <Plus className="w-5 h-5" />
-                        <span>CRÉER UN GROUPE</span>
-                    </button>
+                    <div className="squadrons-sort-wrapper">
+                        <ArrowUpDown size={16} className="squadrons-sort-icon" />
+                        <select 
+                            value={sortBy} 
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="squadrons-sort-select"
+                        >
+                            <option value="name-asc">Nom (A-Z)</option>
+                            <option value="name-desc">Nom (Z-A)</option>
+                            <option value="students-desc">Stagiaires Enrôlés (Élevé)</option>
+                        </select>
+                    </div>
+
+                    <div className="squadrons-view-toggle">
+                        <button 
+                            className={`squadrons-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewMode('grid')}
+                            title="Vue Grille"
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button 
+                            className={`squadrons-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                            onClick={() => setViewMode('table')}
+                            title="Vue Tableau"
+                        >
+                            <TableIcon size={18} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="squadrons-grid">
-                {filteredGroups.map((grp) => (
-                    <div key={grp.id} className="squadrons-card-container">
-                        <div className={`squadrons-card-inner ${flippedCardId === grp.id ? 'flipped' : ''}`}>
-                            
-                            <div className="squadrons-card-front">
-                                <div className="squadrons-card-bg-shape"></div>
+            {viewMode === 'grid' ? (
+                <div className="squadrons-grid">
+                    {filteredAndSortedGroups.map((grp) => (
+                        <div key={grp.id} className="squadrons-card-container">
+                            <div className={`squadrons-card-inner ${flippedCardId === grp.id ? 'flipped' : ''}`}>
+                                
+                                <div className="squadrons-card-front">
+                                    <div className="squadrons-card-bg-shape"></div>
 
-                                <div className="squadrons-card-header">
-                                    <div className="squadrons-card-icon-wrapper">
-                                        <Users className="squadrons-card-icon" />
-                                    </div>
-                                    <div className="squadrons-card-actions">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                window.open(`/admin/print-badges/${grp.id}`, '_blank');
-                                            }}
-                                            className="squadrons-action-btn print"
-                                            style={{ color: '#0A5593', background: 'rgba(10,85,147,0.05)' }}
-                                            title="Imprimer les Badges QR"
-                                        >
-                                            <Printer className="squadrons-action-icon" style={{ width: '1rem', height: '1rem' }} />
-                                        </button>
-                                        <button onClick={() => handleFlip(grp)} className="squadrons-action-btn edit">
-                                            <Edit3 className="squadrons-action-icon" />
-                                        </button>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setPurgeInfo({ isOpen: true, groupId: grp.id });
-                                            }}
-                                            className="squadrons-action-btn delete"
-                                        >
-                                            <Trash2 className="squadrons-action-icon" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="squadrons-card-content">
-                                    <h2 className="squadrons-card-title">
-                                        {grp.id}
-                                    </h2>
-                                    <div className="squadrons-card-subtitle">
-                                        {grp.filiere}
+                                    <div className="squadrons-card-header">
+                                        <div className="squadrons-card-icon-wrapper">
+                                            <Users className="squadrons-card-icon" />
+                                        </div>
+                                        <div className="squadrons-card-actions">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.open(`/admin/print-badges/${grp.id}`, '_blank');
+                                                }}
+                                                className="squadrons-action-btn print"
+                                                style={{ color: '#0A5593', background: 'rgba(10,85,147,0.05)' }}
+                                                title="Imprimer les Badges QR"
+                                            >
+                                                <Printer className="squadrons-action-icon" style={{ width: '1rem', height: '1rem' }} />
+                                            </button>
+                                            <button onClick={() => handleFlip(grp)} className="squadrons-action-btn edit">
+                                                <Edit3 className="squadrons-action-icon" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPurgeInfo({ isOpen: true, groupId: grp.id });
+                                                }}
+                                                className="squadrons-action-btn delete"
+                                            >
+                                                <Trash2 className="squadrons-action-icon" />
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="squadrons-card-info">
-                                        {grp.année_scolaire}
-                                        {grp.salle_nom && (
-                                            <>
-                                                <span className="squadrons-info-dot">•</span>
-                                                <span className="squadrons-info-highlight">{grp.salle_nom}</span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="squadrons-card-footer">
-                                    <div>
-                                        <p className="squadrons-footer-label">Stagiaires</p>
-                                        <p className="squadrons-footer-value-large">
-                                            {grp.students !== undefined && grp.students !== null ? grp.students : '0'}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="squadrons-footer-label">Formateur(s)</p>
-                                        <p className="squadrons-footer-value-small" title={grp.formateur || grp.lead}>
-                                            {grp.formateur || grp.lead}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="squadrons-card-back">
-                                <div className="squadrons-back-header">
-                                    <span className="squadrons-back-title">Mise à jour du Groupe</span>
-                                    <button onClick={() => setFlippedCardId(null)} className="squadrons-close-btn">
-                                        <X className="squadrons-close-icon" />
-                                    </button>
-                                </div>
-
-                                <div className="squadrons-back-content ista-scrollbar">
-                                    <button 
-                                        onClick={() => navigate(`/admin/users?group=${grp.id}`)}
-                                        className="squadrons-view-students-btn"
-                                    >
-                                        <Users className="squadrons-btn-icon" />
-                                        VOIR LES STAGIAIRES ({grp.students || 0})
-                                    </button>
-
-                                    <div className="squadrons-input-wrapper">
-                                        <label className="squadrons-label">Filière</label>
-                                        {!isFiliereEditAutre ? (
-                                            <div className="relative">
-                                                <div
-                                                    onClick={() => setIsFiliereEditDropdownOpen(!isFiliereEditDropdownOpen)}
-                                                    className="squadrons-dropdown-toggle"
-                                                >
-                                                    <div className="squadrons-dropdown-content">
-                                                        <BookOpen className="squadrons-dropdown-icon-left" />
-                                                        <span className="squadrons-dropdown-text">
-                                                             {availableFilieres.find(f => Number(f.id) === Number(editData.filiereId))?.nom || 'SÉLECTIONNER...'}
-                                                        </span>
-                                                    </div>
-                                                    <ChevronDown className={`squadrons-dropdown-chevron ${isFiliereEditDropdownOpen ? 'open' : ''}`} />
-                                                </div>
-
-                                                {isFiliereEditDropdownOpen && (
-                                                    <div className="squadrons-dropdown-menu">
-                                                        <div className="squadrons-dropdown-list ista-scrollbar">
-                                                            {availableFilieres.map(f => (
-                                                                <div
-                                                                    key={f.id}
-                                                                     className={`squadrons-dropdown-item ${Number(editData.filiereId) === Number(f.id) ? 'selected' : ''}`}
-                                                                     onClick={() => {
-                                                                         setEditData({ ...editData, filiereId: f.id });
-                                                                         setIsFiliereEditDropdownOpen(false);
-                                                                     }}
-                                                                 >
-                                                                     <span className={`squadrons-dropdown-item-text ${Number(editData.filiereId) === Number(f.id) ? 'selected' : 'unselected'}`}>
-                                                                         {f.nom}
-                                                                     </span>
-                                                                     {Number(editData.filiereId) === Number(f.id) && <div className="squadrons-dropdown-dot"></div>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                        <div
-                                                            className="squadrons-dropdown-autre"
-                                                            onClick={() => {
-                                                                setIsFiliereEditAutre(true);
-                                                                setIsFiliereEditDropdownOpen(false);
-                                                            }}
-                                                        >
-                                                            <span className="squadrons-dropdown-autre-text">AUTRE (PERSONNALISÉ)</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="squadrons-custom-input-wrapper">
-                                                <input
-                                                    type="text"
-                                                    autoFocus
-                                                    value={customFiliere.nom}
-                                                    onChange={e => setCustomFiliere({ ...customFiliere, nom: e.target.value.toUpperCase() })}
-                                                    placeholder="NOM DE LA FILIÈRE..."
-                                                    className="squadrons-custom-input"
-                                                />
-                                                <button
-                                                    onClick={() => setIsFiliereEditAutre(false)}
-                                                    className="squadrons-custom-close"
-                                                >
-                                                    <X className="squadrons-custom-close-icon" />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="squadrons-input-wrapper">
-                                        <label className="squadrons-label">Année Scolaire</label>
-                                        <div
-                                            onClick={() => setIsAnneeEditDropdownOpen(!isAnneeEditDropdownOpen)}
-                                            className="squadrons-dropdown-toggle"
-                                        >
-                                            <div className="squadrons-dropdown-content">
-                                                <BookOpen className="squadrons-dropdown-icon-left" />
-                                                <span className="squadrons-dropdown-text">
-                                                    {editData.année_scolaire || 'SÉLECTIONNER...'}
-                                                </span>
-                                            </div>
-                                            <ChevronDown className={`squadrons-dropdown-chevron ${isAnneeEditDropdownOpen ? 'open' : ''}`} />
+                                    <div className="squadrons-card-content">
+                                        <h2 className="squadrons-card-title">
+                                            {grp.id}
+                                        </h2>
+                                        <div className="squadrons-card-subtitle">
+                                            {grp.filiere}
                                         </div>
 
-                                        {isAnneeEditDropdownOpen && (
-                                            <div className="squadrons-dropdown-menu">
-                                                {anneesScolaires.map((annee) => (
+                                        <div className="squadrons-card-info">
+                                            {grp.année_scolaire}
+                                            {grp.salle_nom && (
+                                                <>
+                                                    <span className="squadrons-info-dot">•</span>
+                                                    <span className="squadrons-info-highlight">{grp.salle_nom}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="squadrons-card-footer">
+                                        <div>
+                                            <p className="squadrons-footer-label">Stagiaires</p>
+                                            <p className="squadrons-footer-value-large">
+                                                {grp.students !== undefined && grp.students !== null ? grp.students : '0'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="squadrons-footer-label">Formateur(s)</p>
+                                            <p className="squadrons-footer-value-small" title={grp.formateur || grp.lead}>
+                                                {grp.formateur || grp.lead}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="squadrons-card-back">
+                                    <div className="squadrons-back-header">
+                                        <span className="squadrons-back-title">Mise à jour du Groupe</span>
+                                        <button onClick={() => setFlippedCardId(null)} className="squadrons-close-btn">
+                                            <X className="squadrons-close-icon" />
+                                        </button>
+                                    </div>
+
+                                    <div className="squadrons-back-content ista-scrollbar">
+                                        <button 
+                                            onClick={() => navigate(`/admin/users?group=${grp.id}`)}
+                                            className="squadrons-view-students-btn"
+                                        >
+                                            <Users className="squadrons-btn-icon" />
+                                            VOIR LES STAGIAIRES ({grp.students || 0})
+                                        </button>
+
+                                        <div className="squadrons-input-wrapper">
+                                            <label className="squadrons-label">Filière</label>
+                                            {!isFiliereEditAutre ? (
+                                                <div className="relative">
                                                     <div
-                                                        key={annee}
-                                                        className={`squadrons-dropdown-item ${editData.année_scolaire === annee ? 'selected' : ''}`}
+                                                        onClick={() => setIsFiliereEditDropdownOpen(!isFiliereEditDropdownOpen)}
+                                                        className="squadrons-dropdown-toggle"
+                                                    >
+                                                        <div className="squadrons-dropdown-content">
+                                                            <BookOpen className="squadrons-dropdown-icon-left" />
+                                                            <span className="squadrons-dropdown-text">
+                                                                 {availableFilieres.find(f => Number(f.id) === Number(editData.filiereId))?.nom || 'SÉLECTIONNER...'}
+                                                            </span>
+                                                        </div>
+                                                        <ChevronDown className={`squadrons-dropdown-chevron ${isFiliereEditDropdownOpen ? 'open' : ''}`} />
+                                                    </div>
+
+                                                    {isFiliereEditDropdownOpen && (
+                                                        <div className="squadrons-dropdown-menu">
+                                                            <div className="squadrons-dropdown-list ista-scrollbar">
+                                                                {availableFilieres.map(f => (
+                                                                    <div
+                                                                        key={f.id}
+                                                                         className={`squadrons-dropdown-item ${Number(editData.filiereId) === Number(f.id) ? 'selected' : ''}`}
+                                                                         onClick={() => {
+                                                                             setEditData({ ...editData, filiereId: f.id });
+                                                                             setIsFiliereEditDropdownOpen(false);
+                                                                         }}
+                                                                     >
+                                                                         <span className={`squadrons-dropdown-item-text ${Number(editData.filiereId) === Number(f.id) ? 'selected' : 'unselected'}`}>
+                                                                             {f.nom}
+                                                                         </span>
+                                                                         {Number(editData.filiereId) === Number(f.id) && <div className="squadrons-dropdown-dot"></div>}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                            <div
+                                                                className="squadrons-dropdown-autre"
+                                                                onClick={() => {
+                                                                    setIsFiliereEditAutre(true);
+                                                                    setIsFiliereEditDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                <span className="squadrons-dropdown-autre-text">AUTRE (PERSONNALISÉ)</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className="squadrons-custom-input-wrapper">
+                                                    <input
+                                                        type="text"
+                                                        autoFocus
+                                                        value={customFiliere.nom}
+                                                        onChange={e => setCustomFiliere({ ...customFiliere, nom: e.target.value.toUpperCase() })}
+                                                        placeholder="NOM DE LA FILIÈRE..."
+                                                        className="squadrons-custom-input"
+                                                    />
+                                                    <button
+                                                        onClick={() => setIsFiliereEditAutre(false)}
+                                                        className="squadrons-custom-close"
+                                                    >
+                                                        <X className="squadrons-custom-close-icon" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="squadrons-input-wrapper">
+                                            <label className="squadrons-label">Année Scolaire</label>
+                                            <div
+                                                onClick={() => setIsAnneeEditDropdownOpen(!isAnneeEditDropdownOpen)}
+                                                className="squadrons-dropdown-toggle"
+                                            >
+                                                <div className="squadrons-dropdown-content">
+                                                    <BookOpen className="squadrons-dropdown-icon-left" />
+                                                    <span className="squadrons-dropdown-text">
+                                                        {editData.année_scolaire || 'SÉLECTIONNER...'}
+                                                    </span>
+                                                </div>
+                                                <ChevronDown className={`squadrons-dropdown-chevron ${isAnneeEditDropdownOpen ? 'open' : ''}`} />
+                                            </div>
+
+                                            {isAnneeEditDropdownOpen && (
+                                                <div className="squadrons-dropdown-menu">
+                                                    {anneesScolaires.map((annee) => (
+                                                        <div
+                                                            key={annee}
+                                                            className={`squadrons-dropdown-item ${editData.année_scolaire === annee ? 'selected' : ''}`}
+                                                            onClick={() => {
+                                                                setEditData({ ...editData, année_scolaire: annee });
+                                                                setIsAnneeEditDropdownOpen(false);
+                                                            }}
+                                                        >
+                                                            <span className={`squadrons-dropdown-item-text ${editData.année_scolaire === annee ? 'selected' : 'unselected'}`}>
+                                                                {annee}
+                                                            </span>
+                                                            {editData.année_scolaire === annee && <div className="squadrons-dropdown-dot"></div>}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="squadrons-input-wrapper">
+                                            <label className="squadrons-label">Salle d'assignation</label>
+                                            <div
+                                                onClick={() => setIsSalleEditDropdownOpen(!isSalleEditDropdownOpen)}
+                                                className="squadrons-dropdown-toggle"
+                                            >
+                                                <div className="squadrons-dropdown-content">
+                                                    <Layers className="squadrons-dropdown-icon-left" />
+                                                    <span className="squadrons-dropdown-text">
+                                                {editData.salleIds?.length > 0
+                                                    ? availableSalles.filter(s => editData.salleIds.includes(s.id)).map(s => s.nom).join(', ')
+                                                    : 'SÉLECTIONNER...'}
+                                            </span>
+                                                </div>
+                                                <ChevronDown className={`squadrons-dropdown-chevron ${isSalleEditDropdownOpen ? 'open' : ''}`} />
+                                            </div>
+
+                                            {isSalleEditDropdownOpen && (
+                                                <div className="squadrons-dropdown-menu">
+                                                    <div
+                                                        className="squadrons-dropdown-deselect"
                                                         onClick={() => {
-                                                            setEditData({ ...editData, année_scolaire: annee });
-                                                            setIsAnneeEditDropdownOpen(false);
+                                                            setEditData({ ...editData, salleIds: [] });
                                                         }}
                                                     >
-                                                        <span className={`squadrons-dropdown-item-text ${editData.année_scolaire === annee ? 'selected' : 'unselected'}`}>
-                                                            {annee}
-                                                        </span>
-                                                        {editData.année_scolaire === annee && <div className="squadrons-dropdown-dot"></div>}
+                                                        <span className="squadrons-dropdown-deselect-text">DÉSÉLECTIONNER TOUT</span>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="squadrons-input-wrapper">
-                                        <label className="squadrons-label">Salle d'assignation</label>
-                                        <div
-                                            onClick={() => setIsSalleEditDropdownOpen(!isSalleEditDropdownOpen)}
-                                            className="squadrons-dropdown-toggle"
-                                        >
-                                            <div className="squadrons-dropdown-content">
-                                                <Layers className="squadrons-dropdown-icon-left" />
-                                                <span className="squadrons-dropdown-text">
-                                            {editData.salleIds?.length > 0
-                                                ? availableSalles.filter(s => editData.salleIds.includes(s.id)).map(s => s.nom).join(', ')
-                                                : 'SÉLECTIONNER...'}
-                                        </span>
-                                            </div>
-                                            <ChevronDown className={`squadrons-dropdown-chevron ${isSalleEditDropdownOpen ? 'open' : ''}`} />
+                                                    {availableSalles.map((s) => {
+                                                        const isSelected = editData.salleIds?.includes(s.id);
+                                                        return (
+                                                            <div
+                                                                key={s.id}
+                                                                className={`squadrons-dropdown-item ${isSelected ? 'selected' : ''}`}
+                                                                onClick={() => {
+                                                                    const currentIds = Array.isArray(editData.salleIds) ? editData.salleIds : [];
+                                                                    const nextIds = isSelected 
+                                                                        ? currentIds.filter(id => id !== s.id)
+                                                                        : [...currentIds, s.id];
+                                                                    setEditData({ ...editData, salleIds: nextIds });
+                                                                }}
+                                                            >
+                                                                <span className={`squadrons-dropdown-item-text ${isSelected ? 'selected' : 'unselected'}`}>
+                                                                    {s.nom}
+                                                                </span>
+                                                                {isSelected ? <CheckSquare className="squadrons-dropdown-icon-left" /> : <Square className="squadrons-dropdown-icon-left unselected" />}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {isSalleEditDropdownOpen && (
-                                            <div className="squadrons-dropdown-menu">
-                                                <div
-                                                    className="squadrons-dropdown-deselect"
-                                                    onClick={() => {
-                                                        setEditData({ ...editData, salleIds: [] });
-                                                    }}
-                                                >
-                                                    <span className="squadrons-dropdown-deselect-text">DÉSÉLECTIONNER TOUT</span>
-                                                </div>
-                                                {availableSalles.map((s) => {
-                                                    const isSelected = editData.salleIds?.includes(s.id);
-                                                    return (
-                                                        <div
-                                                            key={s.id}
-                                                            className={`squadrons-dropdown-item ${isSelected ? 'selected' : ''}`}
-                                                            onClick={() => {
-                                                                const currentIds = Array.isArray(editData.salleIds) ? editData.salleIds : [];
-                                                                const nextIds = isSelected 
-                                                                    ? currentIds.filter(id => id !== s.id)
-                                                                    : [...currentIds, s.id];
-                                                                setEditData({ ...editData, salleIds: nextIds });
-                                                            }}
-                                                        >
-                                                            <span className={`squadrons-dropdown-item-text ${isSelected ? 'selected' : 'unselected'}`}>
-                                                                {s.nom}
-                                                            </span>
-                                                            {isSelected ? <CheckSquare className="squadrons-dropdown-icon-left" /> : <Square className="squadrons-dropdown-icon-left unselected" />}
-                                                        </div>
-                                                    );
-                                                })}
+                                        <div className="squadrons-input-wrapper">
+                                            <label className="squadrons-label">Formateurs</label>
+                                            <div
+                                                onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
+                                                className="squadrons-dropdown-toggle"
+                                            >
+                                                <span className={`squadrons-dropdown-text ${editData.lead.length > 0 ? '' : 'unselected'}`}>
+                                                    {editData.lead.length > 0 ? editData.lead.join(', ') : 'SÉLECTIONNER...'}
+                                                </span>
+                                                <ChevronDown className={`squadrons-dropdown-chevron ${isEditDropdownOpen ? 'open' : ''}`} />
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <div className="squadrons-input-wrapper">
-                                        <label className="squadrons-label">Formateurs</label>
-                                        <div
-                                            onClick={() => setIsEditDropdownOpen(!isEditDropdownOpen)}
-                                            className="squadrons-dropdown-toggle"
-                                        >
-                                            <span className={`squadrons-dropdown-text ${editData.lead.length > 0 ? '' : 'unselected'}`}>
-                                                {editData.lead.length > 0 ? editData.lead.join(', ') : 'SÉLECTIONNER...'}
-                                            </span>
-                                            <ChevronDown className={`squadrons-dropdown-chevron ${isEditDropdownOpen ? 'open' : ''}`} />
+                                            {isEditDropdownOpen && (
+                                                <div className="squadrons-dropdown-menu">
+                                                    <div className="squadrons-dropdown-list ista-scrollbar">
+                                                    {formateurs.map((f) => {
+                                                        const isSelected = editData.lead.includes(f.name);
+                                                        return (
+                                                            <div
+                                                                key={f.id}
+                                                                className={`squadrons-dropdown-item ${isSelected ? 'selected' : ''}`}
+                                                                onClick={() => {
+                                                                    const newLead = isSelected
+                                                                        ? editData.lead.filter(l => l !== f.name)
+                                                                        : [...editData.lead, f.name];
+                                                                    setEditData({ ...editData, lead: newLead });
+                                                                }}
+                                                            >
+                                                                <span className={`squadrons-dropdown-item-text ${isSelected ? 'selected' : 'unselected'}`}>{f.name}</span>
+                                                                {isSelected ? <CheckSquare className="squadrons-dropdown-icon-left" /> : <Square className="squadrons-dropdown-icon-left unselected" />}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-
-                                        {isEditDropdownOpen && (
-                                            <div className="squadrons-dropdown-menu">
-                                                <div className="squadrons-dropdown-list ista-scrollbar">
-                                                {formateurs.map((f) => {
-                                                    const isSelected = editData.lead.includes(f.name);
-                                                    return (
-                                                        <div
-                                                            key={f.id}
-                                                            className={`squadrons-dropdown-item ${isSelected ? 'selected' : ''}`}
-                                                            onClick={() => {
-                                                                const newLead = isSelected
-                                                                    ? editData.lead.filter(l => l !== f.name)
-                                                                    : [...editData.lead, f.name];
-                                                                setEditData({ ...editData, lead: newLead });
-                                                            }}
-                                                        >
-                                                            <span className={`squadrons-dropdown-item-text ${isSelected ? 'selected' : 'unselected'}`}>{f.name}</span>
-                                                            {isSelected ? <CheckSquare className="squadrons-dropdown-icon-left" /> : <Square className="squadrons-dropdown-icon-left unselected" />}
-                                                        </div>
-                                                    );
-                                                })}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
+
+                                    <button
+                                        onClick={() => handleUpdateGroup(grp.id)}
+                                        className="btn-ista squadrons-save-btn"
+                                    >
+                                        <Save className="w-4 h-4" />
+                                        <span>{t('groups.save_button')}</span>
+                                    </button>
                                 </div>
-
-                                <button
-                                    onClick={() => handleUpdateGroup(grp.id)}
-                                    className="btn-ista squadrons-save-btn"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    <span>{t('groups.save_button')}</span>
-                                </button>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
 
-                <div
-                    onClick={() => setIsGroupModalOpen(true)}
-                    className="squadrons-init-card"
-                >
-                    <div className="squadrons-init-icon-wrapper">
-                        <Plus className="squadrons-init-icon" />
+                    <div
+                        onClick={() => setIsGroupModalOpen(true)}
+                        className="squadrons-init-card"
+                    >
+                        <div className="squadrons-init-icon-wrapper">
+                            <Plus className="squadrons-init-icon" />
+                        </div>
+                        <h3 className="squadrons-init-title">Initialiser un Groupe</h3>
+                        <p className="squadrons-init-subtitle">Ajouter une nouvelle division</p>
                     </div>
-                    <h3 className="squadrons-init-title">Initialiser un Groupe</h3>
-                    <p className="squadrons-init-subtitle">Ajouter une nouvelle division</p>
                 </div>
-            </div>
+            ) : (
+                <div className="squadrons-table-wrapper">
+                    <table className="squadrons-table">
+                        <thead>
+                            <tr>
+                                <th># Code/ID</th>
+                                <th>Filière</th>
+                                <th>Année Scolaire</th>
+                                <th>Salle Assignée</th>
+                                <th>Stagiaires</th>
+                                <th>Formateur Principal</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredAndSortedGroups.length > 0 ? (
+                                filteredAndSortedGroups.map((grp) => (
+                                    <tr key={grp.id}>
+                                        <td className="font-semibold text-primary">{grp.id}</td>
+                                        <td>
+                                            <span className="text-secondary text-sm font-semibold">{grp.filiere}</span>
+                                        </td>
+                                        <td className="font-medium">{grp.année_scolaire}</td>
+                                        <td>
+                                            {grp.salle_nom ? (
+                                                <span className="table-badge salle">
+                                                    <MapPin size={12} className="mr-1 inline-block" /> {grp.salle_nom}
+                                                </span>
+                                            ) : (
+                                                <span className="text-muted text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span className="table-badge students">
+                                                <Users size={12} className="mr-1 inline-block" /> {grp.students || 0}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className="text-secondary text-sm font-semibold">{grp.formateur || grp.lead || 'NON DÉFINI'}</span>
+                                        </td>
+                                        <td>
+                                            <div className="table-actions">
+                                                <button
+                                                    onClick={() => window.open(`/admin/print-badges/${grp.id}`, '_blank')}
+                                                    className="table-action-btn print"
+                                                    title="Imprimer les Badges QR"
+                                                >
+                                                    <Printer size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setViewMode('grid');
+                                                        handleFlip(grp);
+                                                    }} 
+                                                    className="table-action-btn edit" 
+                                                    title="Editer"
+                                                >
+                                                    <Edit3 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setPurgeInfo({ isOpen: true, groupId: grp.id })}
+                                                    className="table-action-btn delete"
+                                                    title="Supprimer"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={7} className="table-empty">
+                                        Aucun groupe ne correspond à votre recherche.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {isRecreateModalOpen && ReactDOM.createPortal(
                 <div className="confirmation-modal-overlay">

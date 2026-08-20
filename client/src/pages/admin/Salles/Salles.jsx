@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import studentService from '../../../services/studentService';
 import './Salles.css';
-import { MapPin, Plus, Trash2, Edit2, Search, X, Check, AlertTriangle, ArrowRight, Hash, Activity, Filter, ChevronDown, Layers, Users } from 'lucide-react';
+import { MapPin, Plus, Trash2, Edit2, Search, X, Check, AlertTriangle, ArrowRight, Hash, Activity, Filter, ChevronDown, Layers, Users, ArrowUpDown, LayoutGrid, Table as TableIcon } from 'lucide-react';
 import '../../../styles/admin-shared.css';
 
 const Salles = () => {
@@ -12,6 +12,8 @@ const Salles = () => {
     const [salles, setSalles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState('grid');
+    const [sortBy, setSortBy] = useState('name-asc');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSalle, setEditingSalle] = useState(null);
     const [formData, setFormData] = useState({ nom: '', groupIds: [] });
@@ -104,9 +106,20 @@ const Salles = () => {
         }
     };
 
-    const filteredSalles = salles.filter(s => 
-        s.nom.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredAndSortedSalles = [...salles]
+        .filter(s => s.nom.toLowerCase().includes(searchTerm.toLowerCase()))
+        .sort((a, b) => {
+            if (sortBy === 'name-asc') {
+                return a.nom.localeCompare(b.nom);
+            } else if (sortBy === 'name-desc') {
+                return b.nom.localeCompare(a.nom);
+            } else if (sortBy === 'groups-desc') {
+                const countA = a.groupIds?.length || 0;
+                const countB = b.groupIds?.length || 0;
+                return countB - countA;
+            }
+            return 0;
+        });
 
     return (
         <div className={`salles-container ${isRtl ? 'rtl' : ''}`}>
@@ -123,16 +136,6 @@ const Salles = () => {
                 </div>
 
                 <div className="salles-actions">
-                    <div className="salles-search-wrapper">
-                        <Search className={`salles-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
-                        <input
-                            type="text"
-                            placeholder={t('salles.search_placeholder')}
-                            className={`salles-search-input ${isRtl ? 'rtl' : 'ltr'}`}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
                     <button onClick={() => handleOpenModal()} className="btn-ista btn-add-salle">
                         <Plus className="w-5 h-5" />
                         <span>{t('salles.add_button')}</span>
@@ -140,174 +143,291 @@ const Salles = () => {
                 </div>
             </div>
 
-            <div className="salles-grid">
-                
-                <div onClick={() => handleOpenModal()} className="salles-init-card">
-                    <div className="salles-init-icon-wrapper">
-                        <Plus className="salles-init-icon" />
-                    </div>
-                    <h3 className="salles-init-title">{t('salles.new_room')}</h3>
-                    <p className="salles-init-subtitle">{t('salles.register_room')}</p>
+            <div className="salles-control-bar">
+                <div className="salles-search-wrapper">
+                    <Search className={`salles-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
+                    <input
+                        type="text"
+                        placeholder="Rechercher par nom..."
+                        className={`salles-search-input ${isRtl ? 'rtl' : 'ltr'}`}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="salles-search-clear">
+                            <X size={14} />
+                        </button>
+                    )}
                 </div>
 
-                {loading ? (
-                    Array(5).fill(0).map((_, i) => (
+                <div className="salles-controls-right">
+                    <div className="salles-sort-wrapper">
+                        <ArrowUpDown size={16} className="salles-sort-icon" />
+                        <select 
+                            value={sortBy} 
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="salles-sort-select"
+                        >
+                            <option value="name-asc">Nom (A-Z)</option>
+                            <option value="name-desc">Nom (Z-A)</option>
+                            <option value="groups-desc">Groupes Assignés (Élevé)</option>
+                        </select>
+                    </div>
+
+                    <div className="salles-view-toggle">
+                        <button 
+                            className={`salles-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                            onClick={() => setViewMode('grid')}
+                            title="Vue Grille"
+                        >
+                            <LayoutGrid size={18} />
+                        </button>
+                        <button 
+                            className={`salles-view-btn ${viewMode === 'table' ? 'active' : ''}`}
+                            onClick={() => setViewMode('table')}
+                            title="Vue Tableau"
+                        >
+                            <TableIcon size={18} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="salles-grid">
+                    {Array(5).fill(0).map((_, i) => (
                         <div key={i} className="salles-loading-card">
                             <div className="salles-loading-icon"></div>
                             <div className="salles-loading-title"></div>
                             <div className="salles-loading-subtitle"></div>
                         </div>
-                    ))
-                ) : filteredSalles.length > 0 ? (
-                    filteredSalles.map((salle) => (
-                        <div key={salle.id} className="salles-card-container">
-                            <div className={`salles-card-inner ${flippedCardId === salle.id ? 'flipped' : ''}`}>
-                                
-                                <div className="salles-card-front">
-                                    <div className="salles-card-bg-shape"></div>
+                    ))}
+                </div>
+            ) : viewMode === 'grid' ? (
+                <div className="salles-grid">
+                    <div onClick={() => handleOpenModal()} className="salles-init-card">
+                        <div className="salles-init-icon-wrapper">
+                            <Plus className="salles-init-icon" />
+                        </div>
+                        <h3 className="salles-init-title">{t('salles.new_room')}</h3>
+                        <p className="salles-init-subtitle">{t('salles.register_room')}</p>
+                    </div>
 
-                                    <div className="salles-card-header">
-                                        <div className="salles-card-icon-wrapper">
-                                            <MapPin className="salles-card-icon" />
+                    {filteredAndSortedSalles.length > 0 ? (
+                        filteredAndSortedSalles.map((salle) => (
+                            <div key={salle.id} className="salles-card-container">
+                                <div className={`salles-card-inner ${flippedCardId === salle.id ? 'flipped' : ''}`}>
+                                    
+                                    <div className="salles-card-front">
+                                        <div className="salles-card-bg-shape"></div>
+
+                                        <div className="salles-card-header">
+                                            <div className="salles-card-icon-wrapper">
+                                                <MapPin className="salles-card-icon" />
+                                            </div>
+                                            <div className="salles-card-actions">
+                                                <button onClick={() => handleFlip(salle)} className="salles-action-btn edit">
+                                                    <Edit2 className="salles-action-icon" />
+                                                </button>
+                                                <button onClick={() => setIsDeleting(salle.id)} className="salles-action-btn delete">
+                                                    <Trash2 className="salles-action-icon" />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="salles-card-actions">
-                                            <button onClick={() => handleFlip(salle)} className="salles-action-btn edit">
-                                                <Edit2 className="salles-action-icon" />
-                                            </button>
-                                            <button onClick={() => setIsDeleting(salle.id)} className="salles-action-btn delete">
-                                                <Trash2 className="salles-action-icon" />
-                                            </button>
+
+                                        <div className="salles-card-content">
+                                            <div className="salles-id-wrapper">
+                                                <Hash className="salles-id-icon" />
+                                                <span className="salles-id-text">{salle.id}</span>
+                                            </div>
+                                            <h2 className="salles-card-title">
+                                                {salle.nom}
+                                            </h2>
+                                            <div className="salles-status-badge">
+                                                <div className="salles-status-row">
+                                                    <div className="salles-status-dot"></div>
+                                                    <span className="salles-status-text">{t('salles.available')}</span>
+                                                </div>
+                                                {salle.groupIds?.length > 0 && (
+                                                    <>
+                                                        <div className="salles-group-list">
+                                                            {salle.groupIds.map(gId => (
+                                                                <div key={gId} className="salles-group-item">
+                                                                    <Users className="salles-group-icon" />
+                                                                    <span className="salles-group-text">{gId}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {salle.lead_formateurs && (
+                                                            <div className="salles-lead-formateur">
+                                                                <div className="salles-lead-dot"></div>
+                                                                <span className="salles-lead-text">{salle.lead_formateurs}</span>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="salles-card-content">
-                                        <div className="salles-id-wrapper">
-                                            <Hash className="salles-id-icon" />
-                                            <span className="salles-id-text">{salle.id}</span>
+                                    <div className="salles-card-back">
+                                        <div className="salles-back-header">
+                                            <span className="salles-back-title">{t('salles.update_room')}</span>
+                                            <button onClick={() => setFlippedCardId(null)} className="salles-close-btn">
+                                                <X className="salles-close-icon" />
+                                            </button>
                                         </div>
-                                        <h2 className="salles-card-title">
-                                            {salle.nom}
-                                        </h2>
-                                        <div className="salles-status-badge">
-                                            <div className="salles-status-row">
-                                                <div className="salles-status-dot"></div>
-                                                <span className="salles-status-text">{t('salles.available')}</span>
+
+                                        <div className="salles-back-form ista-scrollbar">
+                                            <div className="salles-input-wrapper">
+                                                <label className="salles-label">{t('salles.label')}</label>
+                                                <input
+                                                    type="text"
+                                                    autoFocus
+                                                    required
+                                                    className="salles-input"
+                                                    placeholder={t('salles.placeholder')}
+                                                    value={formData.nom}
+                                                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                                                />
                                             </div>
-                                            {salle.groupIds?.length > 0 && (
-                                                <>
-                                                    <div className="salles-group-list">
-                                                        {salle.groupIds.map(gId => (
-                                                            <div key={gId} className="salles-group-item">
-                                                                <Users className="salles-group-icon" />
-                                                                <span className="salles-group-text">{gId}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    {salle.lead_formateurs && (
-                                                        <div className="salles-lead-formateur">
-                                                            <div className="salles-lead-dot"></div>
-                                                            <span className="salles-lead-text">{salle.lead_formateurs}</span>
+
+                                            <div className="salles-input-wrapper salles-dropdown-wrapper">
+                                                <label className="salles-label">Groupe assigné</label>
+                                                <div
+                                                    onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
+                                                    className="salles-dropdown-toggle"
+                                                >
+                                                    <span className="salles-dropdown-text">
+                                                        {formData.groupIds?.length > 0 ? formData.groupIds.join(', ') : 'NON ASSIGNÉ'}
+                                                    </span>
+                                                    <ChevronDown className={`salles-dropdown-icon ${isGroupDropdownOpen ? 'open' : ''}`} />
+                                                </div>
+                                                
+                                                {isGroupDropdownOpen && (
+                                                    <div className="salles-dropdown-menu ista-scrollbar">
+                                                        <div 
+                                                            className="salles-dropdown-item"
+                                                            onClick={() => {
+                                                                setFormData({ ...formData, groupIds: [] });
+                                                            }}
+                                                        >
+                                                            DÉSÉLECTIONNER TOUT
                                                         </div>
-                                                    )}
+                                                        {groups.map(g => {
+                                                            const isSelected = formData.groupIds?.includes(g.id);
+                                                            return (
+                                                                <div 
+                                                                    key={g.id}
+                                                                    className={`salles-dropdown-item ${isSelected ? 'selected' : 'unselected'}`}
+                                                                    onClick={() => {
+                                                                        const currentIds = Array.isArray(formData.groupIds) ? formData.groupIds : [];
+                                                                        const nextIds = isSelected 
+                                                                            ? currentIds.filter(id => id !== g.id)
+                                                                            : [...currentIds, g.id];
+                                                                        setFormData({ ...formData, groupIds: nextIds });
+                                                                    }}
+                                                                >
+                                                                    <span>{g.id}</span>
+                                                                    {isSelected ? <Check className="w-3 h-3" /> : <div className="salles-dropdown-checkbox" />}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleUpdate(salle.id)}
+                                            disabled={submitting}
+                                            className="btn-ista salles-save-btn"
+                                        >
+                                            {submitting ? (
+                                                <Activity className="w-4 h-4 animate-spin text-white" />
+                                            ) : (
+                                                <>
+                                                    <Layers className="w-4 h-4" />
+                                                    <span>{t('salles.save')}</span>
                                                 </>
                                             )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="salles-card-back">
-                                    <div className="salles-back-header">
-                                        <span className="salles-back-title">{t('salles.update_room')}</span>
-                                        <button onClick={() => setFlippedCardId(null)} className="salles-close-btn">
-                                            <X className="salles-close-icon" />
                                         </button>
                                     </div>
 
-                                    <div className="salles-back-form ista-scrollbar">
-                                        <div className="salles-input-wrapper">
-                                            <label className="salles-label">{t('salles.label')}</label>
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                required
-                                                className="salles-input"
-                                                placeholder={t('salles.placeholder')}
-                                                value={formData.nom}
-                                                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                                            />
-                                        </div>
-
-                                        <div className="salles-input-wrapper salles-dropdown-wrapper">
-                                            <label className="salles-label">Groupe assigné</label>
-                                            <div
-                                                onClick={() => setIsGroupDropdownOpen(!isGroupDropdownOpen)}
-                                                className="salles-dropdown-toggle"
-                                            >
-                                                <span className="salles-dropdown-text">
-                                                    {formData.groupIds?.length > 0 ? formData.groupIds.join(', ') : 'NON ASSIGNÉ'}
-                                                </span>
-                                                <ChevronDown className={`salles-dropdown-icon ${isGroupDropdownOpen ? 'open' : ''}`} />
-                                            </div>
-                                            
-                                            {isGroupDropdownOpen && (
-                                                <div className="salles-dropdown-menu ista-scrollbar">
-                                                    <div 
-                                                        className="salles-dropdown-item"
-                                                        onClick={() => {
-                                                            setFormData({ ...formData, groupIds: [] });
-                                                        }}
-                                                    >
-                                                        DÉSÉLECTIONNER TOUT
-                                                    </div>
-                                                    {groups.map(g => {
-                                                        const isSelected = formData.groupIds?.includes(g.id);
-                                                        return (
-                                                            <div 
-                                                                key={g.id}
-                                                                className={`salles-dropdown-item ${isSelected ? 'selected' : 'unselected'}`}
-                                                                onClick={() => {
-                                                                    const currentIds = Array.isArray(formData.groupIds) ? formData.groupIds : [];
-                                                                    const nextIds = isSelected 
-                                                                        ? currentIds.filter(id => id !== g.id)
-                                                                        : [...currentIds, g.id];
-                                                                    setFormData({ ...formData, groupIds: nextIds });
-                                                                }}
-                                                            >
-                                                                <span>{g.id}</span>
-                                                                {isSelected ? <Check className="w-3 h-3" /> : <div className="salles-dropdown-checkbox" />}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => handleUpdate(salle.id)}
-                                        disabled={submitting}
-                                        className="btn-ista salles-save-btn"
-                                    >
-                                        {submitting ? (
-                                            <Activity className="w-4 h-4 animate-spin text-white" />
-                                        ) : (
-                                            <>
-                                                <Layers className="w-4 h-4" />
-                                                <span>{t('salles.save')}</span>
-                                            </>
-                                        )}
-                                    </button>
                                 </div>
-
                             </div>
+                        ))
+                    ) : (
+                        <div className="salles-empty-state">
+                            <p className="salles-empty-text">Aucune salle ne correspond à votre recherche.</p>
                         </div>
-                    ))
-                ) : (
-                    <div className="salles-empty-state">
-                        <p className="salles-empty-text">{t('salles.no_rooms')}</p>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            ) : (
+                <div className="salles-table-wrapper">
+                    <table className="salles-table">
+                        <thead>
+                            <tr>
+                                <th># Code/ID</th>
+                                <th>Nom de la Salle</th>
+                                <th>Groupes Assignés</th>
+                                <th>Formateur Principal</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredAndSortedSalles.length > 0 ? (
+                                filteredAndSortedSalles.map((salle) => (
+                                    <tr key={salle.id}>
+                                        <td className="font-mono text-muted">#{salle.id}</td>
+                                        <td className="font-semibold text-primary">{salle.nom}</td>
+                                        <td>
+                                            {salle.groupIds?.length > 0 ? (
+                                                <div className="salles-table-groups">
+                                                    {salle.groupIds.map(gId => (
+                                                        <span key={gId} className="table-badge groups">
+                                                            <Users size={12} className="mr-1 inline-block" /> {gId}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted text-xs">NON ASSIGNÉ</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            {salle.lead_formateurs ? (
+                                                <span className="text-secondary text-sm font-semibold">{salle.lead_formateurs}</span>
+                                            ) : (
+                                                <span className="text-muted text-xs">—</span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <span className="table-status-pill active">{t('salles.available')}</span>
+                                        </td>
+                                        <td>
+                                            <div className="table-actions">
+                                                <button onClick={() => handleOpenModal(salle)} className="table-action-btn edit" title="Editer">
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button onClick={() => setIsDeleting(salle.id)} className="table-action-btn delete" title="Supprimer">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className="table-empty">
+                                        Aucune salle ne correspond à votre recherche.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {isModalOpen && ReactDOM.createPortal(
                 <div className="salles-modal-overlay">
