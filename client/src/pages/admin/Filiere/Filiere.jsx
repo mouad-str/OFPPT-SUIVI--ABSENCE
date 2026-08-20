@@ -200,7 +200,7 @@ const Filiere = () => {
                     </h1>
                     <div className={`filiere-subtitle-wrapper ${isRtl ? 'rtl' : ''}`}>
                         <div className="pulse-dot"></div>
-                        <span>Secteurs & Spécialités de Formation OFPPT</span>
+                        <span>{t('filiere.subtitle')}</span>
                     </div>
                 </div>
 
@@ -212,7 +212,7 @@ const Filiere = () => {
                         title="Télécharger le catalogue des filières"
                     >
                         <Download size={18} />
-                        <span>Exporter CSV</span>
+                        <span>{t('filiere.export_csv')}</span>
                     </button>
                     <button onClick={() => handleOpenModal()} className="btn-ista btn-add-filiere">
                         <Plus className="btn-add-icon" />
@@ -227,7 +227,7 @@ const Filiere = () => {
                         <Layers className="filiere-stat-icon" />
                     </div>
                     <div className="filiere-stat-info">
-                        <span className="filiere-stat-label">Total Filières</span>
+                        <span className="filiere-stat-label">{t('filiere.total_filieres')}</span>
                         <span className="filiere-stat-value">{loading ? '...' : stats.totalFilieres}</span>
                     </div>
                 </div>
@@ -237,7 +237,7 @@ const Filiere = () => {
                         <BookOpen className="filiere-stat-icon" />
                     </div>
                     <div className="filiere-stat-info">
-                        <span className="filiere-stat-label">Groupes Associés</span>
+                        <span className="filiere-stat-label">{t('filiere.associated_groups')}</span>
                         <span className="filiere-stat-value">{loading ? '...' : stats.totalGroups}</span>
                     </div>
                 </div>
@@ -247,7 +247,7 @@ const Filiere = () => {
                         <Users className="filiere-stat-icon" />
                     </div>
                     <div className="filiere-stat-info">
-                        <span className="filiere-stat-label">Stagiaires Enrôlés</span>
+                        <span className="filiere-stat-label">{t('filiere.enrolled_students')}</span>
                         <span className="filiere-stat-value">{loading ? '...' : stats.totalStagiaires}</span>
                     </div>
                 </div>
@@ -257,7 +257,7 @@ const Filiere = () => {
                         <Activity className="filiere-stat-icon" />
                     </div>
                     <div className="filiere-stat-info">
-                        <span className="filiere-stat-label">Pôle Principal</span>
+                        <span className="filiere-stat-label">{t('filiere.main_hub')}</span>
                         <span className="filiere-stat-value text-truncate">
                             {loading ? '...' : (stats.largestFiliere?.nom || 'Aucun')}
                         </span>
@@ -270,7 +270,7 @@ const Filiere = () => {
                     <Search className={`filiere-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
                     <input
                         type="text"
-                        placeholder="Rechercher par nom ou code..."
+                        placeholder={t('filiere.search_placeholder')}
                         className={`filiere-search-input ${isRtl ? 'rtl' : 'ltr'}`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -290,10 +290,10 @@ const Filiere = () => {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="filiere-sort-select"
                         >
-                            <option value="name-asc">Nom (A-Z)</option>
-                            <option value="name-desc">Nom (Z-A)</option>
-                            <option value="groups-desc">Nombre de Groupes (Élevé)</option>
-                            <option value="stagiaires-desc">Stagiaires Enrôlés (Élevé)</option>
+                            <option value="name-asc">{t('filiere.sort_name_asc')}</option>
+                            <option value="name-desc">{t('filiere.sort_name_desc')}</option>
+                            <option value="groups-desc">{t('filiere.sort_groups_desc')}</option>
+                            <option value="stagiaires-desc">{t('filiere.sort_students_desc')}</option>
                         </select>
                     </div>
 
@@ -374,11 +374,11 @@ const Filiere = () => {
                                             <div className="filiere-card-metrics">
                                                 <div className="filiere-metric-pill">
                                                     <BookOpen size={14} />
-                                                    <span>{filiere.groupes_count || 0} Groupes</span>
+                                                    <span>{filiere.groupes_count || 0} {t('groups.title')}</span>
                                                 </div>
                                                 <div className="filiere-metric-pill">
                                                     <Users size={14} />
-                                                    <span>{filiere.stagiaires_count || 0} Stagiaires</span>
+                                                    <span>{filiere.stagiaires_count || 0} {t('accounts.students_section')}</span>
                                                 </div>
                                             </div>
 
@@ -436,7 +436,7 @@ const Filiere = () => {
                             <div className="filiere-empty-icon-wrapper">
                                  <Layers className="filiere-empty-icon" />
                             </div>
-                            <p className="filiere-empty-text">Aucune filière trouvée pour "{searchTerm}"</p>
+                            <p className="filiere-empty-text">{t('filiere.no_filieres_match')}</p>
                         </div>
                     )}
                 </div>
@@ -445,12 +445,12 @@ const Filiere = () => {
                     <table className="filiere-table">
                         <thead>
                             <tr>
-                                <th># Code</th>
-                                <th>Nom de la Filière</th>
-                                <th>Groupes Associés</th>
-                                <th>Stagiaires Enrôlés</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
+                                <th>{t('filiere.col_code')}</th>
+                                <th>{t('filiere.col_name')}</th>
+                                <th>{t('filiere.col_groups')}</th>
+                                <th>{t('filiere.col_students')}</th>
+                                <th>{t('filiere.col_status')}</th>
+                                <th>{t('filiere.col_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -470,7 +470,7 @@ const Filiere = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <span className="table-status-pill active">Active</span>
+                                            <span className="table-status-pill active">{t('dashboard.status_active')}</span>
                                         </td>
                                         <td>
                                             <div className="table-actions">
@@ -487,7 +487,7 @@ const Filiere = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="table-empty">
-                                        Aucune filière ne correspond à votre recherche.
+                                        {t('filiere.no_filieres_match')}
                                     </td>
                                 </tr>
                             )}
@@ -571,7 +571,7 @@ const Filiere = () => {
                         </div>
                         <h2 className="filiere-confirm-title">{t('filiere.delete_title', 'Confirmer la Suppression')}</h2>
                         <p className="filiere-confirm-msg">
-                            Êtes-vous sûr de vouloir supprimer cette filière ? Cette action est irréversible.
+                            {t('filiere.delete_msg')}
                         </p>
                         
                         {deleteErrorMessage && (
