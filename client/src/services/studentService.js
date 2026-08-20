@@ -131,6 +131,15 @@ export const studentService = {
         return response.data;
     },
 
+    importSchedule: async (formData) => {
+        const response = await api.post('/admin/schedule/import', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
+    },
+
     // Formateur Group/Users fetching (used on formateur screens)
     getFormateurGroups: async () => {
         const response = await api.get('/formateur/groups');

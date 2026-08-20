@@ -1569,3 +1569,187 @@ exports.deleteSchedule = async (req, res, next) => {
         next(err);
     }
 };
+
+exports.importSchedule = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Veuillez uploader un fichier Excel.' });
+        }
+
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet);
+
+        if (data.length === 0) {
+            return res.status(400).json({ message: 'Le fichier Excel est vide.' });
+        }
+
+        // Fetch formateurs, groups, and salles for matching
+        const [formateursList] = await pool.query('SELECT id, name FROM formateurs');
+        const [groupsList] = await pool.query('SELECT id FROM groups');
+        const [sallesList] = await pool.query('SELECT id, nom FROM salles');
+
+        const getRowValue = (row, possibleKeys) => {
+            const keys = Object.keys(row);
+            for (const key of keys) {
+                const cleanKey = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                for (const pk of possibleKeys) {
+                    const cleanPk = pk.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    if (cleanKey === cleanPk || cleanKey.includes(cleanPk)) {
+                        return row[key];
+                    }
+                }
+            }
+            return null;
+        };
+
+        const parseMinutes = (tStr) => {
+            const [h, m] = tStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        let importedCount = 0;
+        const errors = [];
+
+        for (let index = 0; index < data.length; index++) {
+            const row = data[index];
+            const lineNum = index + 2; // spreadsheet rows are 2-indexed since row 1 is header
+
+            let subject = getRowValue(row, ['Matiere', 'Module', 'Subject', 'Cours', 'Sujet']);
+            let group_id = getRowValue(row, ['Groupe', 'Group', 'Classe']);
+            let formateurName = getRowValue(row, ['Formateur', 'Teacher', 'Enseignant', 'Formateur Nom']);
+            let day = getRowValue(row, ['Jour', 'Day', 'Date']);
+            let startTime = getRowValue(row, ['Heure Debut', 'Start Time', 'Debut', 'Start', 'Heure_Debut', 'HeureDébut']);
+            let endTime = getRowValue(row, ['Heure Fin', 'End Time', 'Fin', 'End', 'Heure_Fin', 'HeureFin']);
+            let salleName = getRowValue(row, ['Salle', 'Room', 'Local']);
+
+            if (!subject || !group_id || !formateurName || !day || !startTime || !endTime || !salleName) {
+                errors.push(`Ligne ${lineNum} : Informations manquantes (Matière, Groupe, Formateur, Jour, Début, Fin et Salle requis).`);
+                continue;
+            }
+
+            // Clean & normalize
+            subject = String(subject).trim();
+            group_id = String(group_id).trim().toUpperCase();
+            formateurName = String(formateurName).trim();
+            day = String(day).trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            startTime = String(startTime).trim();
+            endTime = String(endTime).trim();
+            salleName = String(salleName).trim();
+
+            // Match day
+            const daysMap = {
+                'LUNDI': 'LUNDI', 'MARDI': 'MARDI', 'MERCREDI': 'MERCREDI', 'JEUDI': 'JEUDI', 'VENDREDI': 'VENDREDI', 'SAMEDI': 'SAMEDI',
+                'MONDAY': 'LUNDI', 'TUESDAY': 'MARDI', 'WEDNESDAY': 'MERCREDI', 'THURSDAY': 'JEUDI', 'FRIDAY': 'VENDREDI', 'SATURDAY': 'SAMEDI'
+            };
+            const mappedDay = daysMap[day];
+            if (!mappedDay) {
+                errors.push(`Ligne ${lineNum} : Jour invalide '${day}'. Utilisez Lundi, Mardi, etc.`);
+                continue;
+            }
+
+            // Match Formateur
+            const matchedFormateur = formateursList.find(f => 
+                f.name.trim().toLowerCase() === formateurName.toLowerCase() || 
+                f.name.trim().toLowerCase().includes(formateurName.toLowerCase())
+            );
+            if (!matchedFormateur) {
+                errors.push(`Ligne ${lineNum} : Formateur '${formateurName}' non trouvé.`);
+                continue;
+            }
+
+            // Match Group
+            const matchedGroup = groupsList.find(g => g.id.toLowerCase() === group_id.toLowerCase());
+            if (!matchedGroup) {
+                errors.push(`Ligne ${lineNum} : Groupe '${group_id}' non trouvé.`);
+                continue;
+            }
+
+            // Match Salle
+            const matchedSalle = sallesList.find(s => 
+                s.nom.trim().toLowerCase() === salleName.toLowerCase() ||
+                s.nom.trim().toLowerCase().includes(salleName.toLowerCase())
+            );
+            if (!matchedSalle) {
+                errors.push(`Ligne ${lineNum} : Salle '${salleName}' non trouvée.`);
+                continue;
+            }
+
+            // Validate time format
+            const timeReg = /^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (!timeReg.test(startTime) || !timeReg.test(endTime)) {
+                errors.push(`Ligne ${lineNum} : Format d'heure invalide. Utilisez HH:MM (Ex: 08:30).`);
+                continue;
+            }
+
+            const newStart = parseMinutes(startTime);
+            const newEnd = parseMinutes(endTime);
+            if (newStart >= newEnd) {
+                errors.push(`Ligne ${lineNum} : L'heure de début doit être antérieure à l'heure de fin.`);
+                continue;
+            }
+
+            const timeString = `${startTime} - ${endTime}`;
+
+            // Check overlap
+            try {
+                const [existingSlots] = await pool.query(`
+                    SELECT t.id, t.formateur_id, f.name as formateur_name, t.group_id, t.time, t.salle_id, s.nom as salle_name
+                    FROM timetables t
+                    LEFT JOIN formateurs f ON t.formateur_id = f.id
+                    LEFT JOIN salles s ON t.salle_id = s.id
+                    WHERE t.day = ?
+                `, [mappedDay]);
+
+                let hasOverlap = false;
+                for (const slot of existingSlots) {
+                    const slotParts = slot.time.split('-').map(tStr => tStr.trim());
+                    if (slotParts.length === 2) {
+                        const [start, end] = slotParts.map(parseMinutes);
+                        const overlaps = (newStart < end && newEnd > start);
+                        if (overlaps) {
+                            if (Number(slot.formateur_id) === Number(matchedFormateur.id)) {
+                                errors.push(`Ligne ${lineNum} : Conflit Formateur - Le formateur ${slot.formateur_name} enseigne déjà au groupe ${slot.group_id} sur ce créneau (${slot.time}).`);
+                                hasOverlap = true;
+                                break;
+                            }
+                            if (Number(slot.salle_id) === Number(matchedSalle.id)) {
+                                errors.push(`Ligne ${lineNum} : Conflit Salle - La salle ${slot.salle_name} est déjà réservée par le groupe ${slot.group_id} sur ce créneau (${slot.time}).`);
+                                hasOverlap = true;
+                                break;
+                            }
+                            if (slot.group_id === matchedGroup.id) {
+                                errors.push(`Ligne ${lineNum} : Conflit Groupe - Le groupe ${slot.group_id} a déjà cours sur ce créneau (${slot.time}).`);
+                                hasOverlap = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (hasOverlap) continue;
+
+                // Insert slot
+                await pool.query(`
+                    INSERT INTO timetables (formateur_id, group_id, day, time, salle_id, subject)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `, [matchedFormateur.id, matchedGroup.id, mappedDay, timeString, matchedSalle.id, subject]);
+
+                importedCount++;
+            } catch (err) {
+                console.error("IMPORT ROW DB ERROR:", err);
+                errors.push(`Ligne ${lineNum} : Erreur d'enregistrement en base de données.`);
+            }
+        }
+
+        res.json({
+            success: true,
+            imported: importedCount,
+            errors
+        });
+    } catch (err) {
+        console.error("IMPORT SCHEDULE MAIN ERROR:", err);
+        next(err);
+    }
+};

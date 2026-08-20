@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Calendar, Plus, Edit3, Trash2, Clock, MapPin, User, Users, BookOpen, AlertCircle, X, Filter, Copy } from 'lucide-react';
+import { Calendar, Plus, Edit3, Trash2, Clock, MapPin, User, Users, BookOpen, AlertCircle, X, Filter, Copy, Upload } from 'lucide-react';
 import studentService from '../../../services/studentService';
 import { useNotification } from '../../../hooks/useNotification';
 import './Timetable.css';
@@ -28,6 +28,11 @@ const Timetable = () => {
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSlot, setEditingSlot] = useState(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importing, setImporting] = useState(false);
+    const [importResult, setImportResult] = useState(null);
+    const [importErrorMsg, setImportErrorMsg] = useState(null);
     const [formData, setFormData] = useState({
         formateur_id: '',
         group_id: '',
@@ -161,6 +166,45 @@ const Timetable = () => {
         }
     };
 
+    const handleFileChange = (e) => {
+        setImportFile(e.target.files[0]);
+        setImportErrorMsg(null);
+        setImportResult(null);
+    };
+
+    const handleImportSubmit = async (e) => {
+        e.preventDefault();
+        if (!importFile) {
+            setImportErrorMsg("Veuillez sélectionner un fichier.");
+            return;
+        }
+
+        setImporting(true);
+        setImportErrorMsg(null);
+        setImportResult(null);
+
+        const formDataObj = new FormData();
+        formDataObj.append('file', importFile);
+
+        try {
+            const res = await studentService.importSchedule(formDataObj);
+            setImportResult(res);
+            if (res.imported > 0) {
+                addNotification(`${res.imported} créneau(x) importé(s) avec succès.`, "success");
+                const updatedSched = await studentService.getAdminSchedule();
+                setSlots(updatedSched.schedule || []);
+            } else if (res.errors?.length > 0) {
+                addNotification("L'importation a échoué. Veuillez vérifier les erreurs.", "error");
+            }
+        } catch (err) {
+            console.error("Import timetable error:", err);
+            const serverMsg = err.response?.data?.message || "Erreur lors de l'importation de l'emploi du temps.";
+            setImportErrorMsg(serverMsg);
+        } finally {
+            setImporting(false);
+        }
+    };
+
     // Filter logic
     const filteredSlots = slots.filter(s => {
         if (filterType === 'ALL') return true;
@@ -187,10 +231,21 @@ const Timetable = () => {
                     <h1 className="timetable-title">Gestion de l'Emploi du Temps</h1>
                     <p className="timetable-subtitle">Organisez les plannings de cours et résolvez automatiquement les conflits de salles et de formateurs.</p>
                 </div>
-                <button onClick={openCreateModal} className="btn-add-slot">
-                    <Plus size={18} />
-                    <span>Ajouter un créneau</span>
-                </button>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button onClick={() => {
+                        setImportFile(null);
+                        setImportResult(null);
+                        setImportErrorMsg(null);
+                        setIsImportModalOpen(true);
+                    }} className="btn-import-timetable">
+                        <Upload size={18} />
+                        <span>Importer Excel</span>
+                    </button>
+                    <button onClick={openCreateModal} className="btn-add-slot">
+                        <Plus size={18} />
+                        <span>Ajouter un créneau</span>
+                    </button>
+                </div>
             </div>
 
             {/* Filter Bar */}
@@ -409,6 +464,79 @@ const Timetable = () => {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+            {/* Import Modal */}
+            {isImportModalOpen && (
+                <div className="timetable-modal-overlay">
+                    <div className="timetable-modal-content import-modal">
+                        <div className="modal-header">
+                            <h2>Importer l'Emploi du Temps</h2>
+                            <button onClick={() => setIsImportModalOpen(false)} className="modal-close-btn">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="timetable-modal-body ista-scrollbar" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div className="import-instructions">
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '0.5rem' }}>
+                                    Sélectionnez un fichier Excel (<code>.xlsx</code>, <code>.xls</code>) ou CSV contenant vos créneaux horaires. Le système vérifiera automatiquement les conflits de salles, de formateurs et de groupes.
+                                </p>
+                                <div style={{ background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '0.5rem', padding: '1rem', fontSize: '0.75rem' }}>
+                                    <span style={{ fontWeight: 'bold', display: 'block', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Colonnes requises :</span>
+                                    <code style={{ color: 'var(--primary)', fontWeight: 'bold' }}>Matière, Groupe, Formateur, Jour, Heure Debut, Heure Fin, Salle</code>
+                                    <span style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-muted)' }}>Exemple de Jour : Lundi, Mardi, etc. Format d'heure : HH:MM (ex : 08:30)</span>
+                                </div>
+                            </div>
+
+                            {importErrorMsg && (
+                                <div className="modal-error-banner">
+                                    <AlertCircle size={16} />
+                                    <span>{importErrorMsg}</span>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleImportSubmit} className="modal-form" style={{ gap: '1.5rem' }}>
+                                <div className="form-field">
+                                    <label>Fichier Excel / CSV</label>
+                                    <input 
+                                        type="file" 
+                                        accept=".xlsx, .xls, .csv" 
+                                        onChange={handleFileChange} 
+                                        required
+                                        style={{ padding: '0.5rem', border: '1px dashed var(--border-strong)', borderRadius: '0.5rem', background: '#f8fafc' }}
+                                    />
+                                </div>
+
+                                {importResult && (
+                                    <div className="import-result-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <div style={{ background: 'rgba(0, 102, 92, 0.08)', color: 'var(--primary)', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span>✓ {importResult.imported} créneau(x) importé(s) avec succès.</span>
+                                        </div>
+                                        {importResult.errors?.length > 0 && (
+                                            <div className="import-errors-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#ea580c' }}>Lignes ignorées / Erreurs :</span>
+                                                <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid #fed7aa', background: '#fffaf5', borderRadius: '0.5rem', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }} className="ista-scrollbar">
+                                                    {importResult.errors.map((err, i) => (
+                                                        <span key={i} style={{ fontSize: '0.75rem', color: '#c2410c' }}>• {err}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="modal-actions" style={{ marginTop: '1rem' }}>
+                                    <button type="button" onClick={() => setIsImportModalOpen(false)} className="btn-cancel">
+                                        Fermer
+                                    </button>
+                                    <button type="submit" disabled={importing} className="btn-submit" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {importing ? 'Importation...' : 'Importer'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

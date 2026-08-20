@@ -453,3 +453,50 @@
         align-items: stretch;
     }
 }
+
+/* Excel Timetable Import Button & Modal Styling */
+.btn-import-timetable {
+    background-color: var(--surface);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-import-timetable:hover {
+    background-color: var(--color-active-bg);
+    transform: translateY(-1px);
+}
+
+/* Import Modal Content adjustments */
+.timetable-modal-content.import-modal {
+    max-width: 520px;
+}
+
+.timetable-modal-body {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.import-instructions code {
+    background-color: #f1f5f9;
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-family: monospace;
+}
+
+.import-result-container {
+    animation: fadeIn 0.2s ease-out;
+}
+
+.import-errors-list {
+    margin-top: 0.5rem;
+}

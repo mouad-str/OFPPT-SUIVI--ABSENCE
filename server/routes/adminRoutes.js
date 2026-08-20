@@ -11,7 +11,7 @@ const {
     getAbsenceRegistry, justifyAbsence, addDisciplinePenalty, getDisciplineHistory,
     createUser, updateUser, deleteUser, getStudentDetails, importExcel, recreateClasses, correctAbsence,
     getPendingJustifications, reviewJustification,
-    getAdminSchedule, createSchedule, updateSchedule, deleteSchedule
+    getAdminSchedule, createSchedule, updateSchedule, deleteSchedule, importSchedule
 } = require('../controllers/adminController');
 
 const multer = require('multer');
@@ -54,6 +54,7 @@ router.get('/justifications', protect, authorize('admin'), getPendingJustificati
 router.post('/justify-review', protect, authorize('admin'), reviewJustification);
 router.get('/schedule', protect, authorize('admin'), getAdminSchedule);
 router.post('/schedule', protect, authorize('admin'), createSchedule);
+router.post('/schedule/import', protect, authorize('admin'), upload.single('file'), importSchedule);
 router.put('/schedule/:id', protect, authorize('admin'), updateSchedule);
 router.delete('/schedule/:id', protect, authorize('admin'), deleteSchedule);
 module.exports = router;
