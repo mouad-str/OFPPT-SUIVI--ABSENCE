@@ -207,7 +207,7 @@ const Squadrons = () => {
                     </button>
                     <button onClick={() => setIsGroupModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3">
                         <Plus className="w-5 h-5" />
-                        <span>CRÉER UN GROUPE</span>
+                        <span>{t('groups.create_button')}</span>
                     </button>
                 </div>
             </div>
@@ -217,7 +217,7 @@ const Squadrons = () => {
                     <Search className={`squadrons-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
                     <input
                         type="text"
-                        placeholder="Rechercher par groupe, filière..."
+                        placeholder={t('groups.search_placeholder')}
                         className={`squadrons-search-input ${isRtl ? 'rtl' : 'ltr'}`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -265,9 +265,9 @@ const Squadrons = () => {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="squadrons-sort-select"
                         >
-                            <option value="name-asc">Nom (A-Z)</option>
-                            <option value="name-desc">Nom (Z-A)</option>
-                            <option value="students-desc">Stagiaires Enrôlés (Élevé)</option>
+                            <option value="name-asc">{t('groups.sort_code_asc')}</option>
+                            <option value="name-desc">{t('groups.sort_code_desc')}</option>
+                            <option value="students-desc">{t('groups.sort_students_desc')}</option>
                         </select>
                     </div>
 
@@ -605,13 +605,13 @@ const Squadrons = () => {
                     <table className="squadrons-table">
                         <thead>
                             <tr>
-                                <th># Code/ID</th>
-                                <th>Filière</th>
-                                <th>Année Scolaire</th>
-                                <th>Salle Assignée</th>
-                                <th>Stagiaires</th>
-                                <th>Formateur Principal</th>
-                                <th>Actions</th>
+                                <th>{t('groups.col_code')}</th>
+                                <th>{t('groups.col_filiere')}</th>
+                                <th>{t('groups.col_year')}</th>
+                                <th>{t('groups.col_salle')}</th>
+                                <th>{t('groups.col_students')}</th>
+                                <th>{t('groups.col_formateur')}</th>
+                                <th>{t('groups.col_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -638,7 +638,7 @@ const Squadrons = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <span className="text-secondary text-sm font-semibold">{grp.formateur || grp.lead || 'NON DÉFINI'}</span>
+                                            <span className="text-secondary text-sm font-semibold">{grp.formateur || grp.lead || t('groups.not_defined')}</span>
                                         </td>
                                         <td>
                                             <div className="table-actions">
@@ -673,7 +673,7 @@ const Squadrons = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={7} className="table-empty">
-                                        Aucun groupe ne correspond à votre recherche.
+                                        {t('groups.no_groups_match')}
                                     </td>
                                 </tr>
                             )}

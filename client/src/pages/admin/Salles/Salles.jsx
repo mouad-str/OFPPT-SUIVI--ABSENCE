@@ -148,7 +148,7 @@ const Salles = () => {
                     <Search className={`salles-search-icon ${isRtl ? 'rtl' : 'ltr'}`} />
                     <input
                         type="text"
-                        placeholder="Rechercher par nom..."
+                        placeholder={t('salles.search_placeholder')}
                         className={`salles-search-input ${isRtl ? 'rtl' : 'ltr'}`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -168,9 +168,9 @@ const Salles = () => {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="salles-sort-select"
                         >
-                            <option value="name-asc">Nom (A-Z)</option>
-                            <option value="name-desc">Nom (Z-A)</option>
-                            <option value="groups-desc">Groupes Assignés (Élevé)</option>
+                            <option value="name-asc">{t('salles.sort_name_asc')}</option>
+                            <option value="name-desc">{t('salles.sort_name_desc')}</option>
+                            <option value="groups-desc">{t('salles.sort_groups_desc')}</option>
                         </select>
                     </div>
 
@@ -359,7 +359,7 @@ const Salles = () => {
                         ))
                     ) : (
                         <div className="salles-empty-state">
-                            <p className="salles-empty-text">Aucune salle ne correspond à votre recherche.</p>
+                            <p className="salles-empty-text">{t('salles.no_salles_match')}</p>
                         </div>
                     )}
                 </div>
@@ -368,12 +368,12 @@ const Salles = () => {
                     <table className="salles-table">
                         <thead>
                             <tr>
-                                <th># Code/ID</th>
-                                <th>Nom de la Salle</th>
-                                <th>Groupes Assignés</th>
-                                <th>Formateur Principal</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
+                                <th>{t('salles.col_code')}</th>
+                                <th>{t('salles.col_name')}</th>
+                                <th>{t('salles.col_groups')}</th>
+                                <th>{t('salles.col_formateur')}</th>
+                                <th>{t('salles.col_status')}</th>
+                                <th>{t('salles.col_actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -392,7 +392,7 @@ const Salles = () => {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <span className="text-muted text-xs">NON ASSIGNÉ</span>
+                                                <span className="text-muted text-xs">{t('salles.unassigned')}</span>
                                             )}
                                         </td>
                                         <td>
@@ -420,7 +420,7 @@ const Salles = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="table-empty">
-                                        Aucune salle ne correspond à votre recherche.
+                                        {t('salles.no_salles_match')}
                                     </td>
                                 </tr>
                             )}
