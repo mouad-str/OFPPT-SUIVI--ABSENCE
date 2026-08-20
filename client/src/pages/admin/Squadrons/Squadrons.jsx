@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer, ArrowUpDown, LayoutGrid, Table as TableIcon } from 'lucide-react';
+import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer, ArrowUpDown, LayoutGrid, Table as TableIcon, MapPin } from 'lucide-react';
 import { GroupModal, ConfirmationModal } from '../../../components/Modals';
 import { useNotification } from '../../../hooks/useNotification';
 import { useTranslation } from 'react-i18next';
