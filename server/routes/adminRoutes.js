@@ -11,7 +11,8 @@ const {
     getAbsenceRegistry, justifyAbsence, addDisciplinePenalty, getDisciplineHistory,
     createUser, updateUser, deleteUser, getStudentDetails, importExcel, recreateClasses, correctAbsence,
     getPendingJustifications, reviewJustification,
-    getAdminSchedule, createSchedule, updateSchedule, deleteSchedule, importSchedule
+    getAdminSchedule, createSchedule, updateSchedule, deleteSchedule, importSchedule,
+    getMonthlyAbsenceMatrix, exportMonthlyExcelReport, getImportTemplate, importStudentsBatch
 } = require('../controllers/adminController');
 
 const multer = require('multer');
@@ -26,6 +27,14 @@ router.put('/groups/:id', protect, authorize('admin'), updateGroup);
 router.delete('/groups/:id', protect, authorize('admin'), deleteGroup);
 router.post('/groups/recreate-year', protect, authorize('admin'), recreateClasses);
 router.get('/reports', protect, authorize('admin'), getReports);
+
+// Monthly reports & Matrix
+router.get('/reports/monthly-matrix', protect, authorize('admin'), getMonthlyAbsenceMatrix);
+router.get('/reports/monthly-excel', protect, authorize('admin'), exportMonthlyExcelReport);
+
+// Bulk Import & Templates
+router.get('/template/students', protect, authorize('admin'), getImportTemplate);
+router.post('/students/batch-import', protect, authorize('admin'), upload.single('file'), importStudentsBatch);
 
 router.get('/filieres', protect, authorize('admin'), getFilieres);
 router.post('/filieres', protect, authorize('admin'), createFiliere);

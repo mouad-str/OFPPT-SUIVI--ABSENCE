@@ -1,0 +1,305 @@
+/* ==========================================================================
+   🖨️ OFPPT MONTHLY MATRIX ATTENDANCE SHEET - PRINT STYLES
+   ========================================================================== */
+
+.print-matrix-page {
+    min-height: 100vh;
+    background: #525659;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #111827;
+}
+
+/* Action Bar */
+.matrix-action-bar {
+    width: 100%;
+    max-width: 1100px;
+    background: #1e293b;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-print-matrix {
+    background: #0284c7;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.btn-close-matrix {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Sheet Paper */
+.matrix-sheet {
+    background: #fff;
+    width: 297mm;
+    min-height: 210mm;
+    padding: 15mm 20mm;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Header */
+.matrix-header-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    align-items: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+}
+
+.header-left p {
+    margin: 2px 0;
+    font-size: 8.5pt;
+    font-weight: 600;
+}
+
+.royaume-text {
+    font-weight: 800 !important;
+    letter-spacing: 0.05em;
+}
+
+.header-center {
+    text-align: center;
+}
+
+.matrix-logo {
+    height: 42px;
+    margin-bottom: 4px;
+}
+
+.matrix-title {
+    font-size: 11pt;
+    font-weight: 800;
+    color: #000;
+    margin: 2px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.matrix-subtitle {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0284c7;
+    margin: 0;
+}
+
+.header-right {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.group-meta-card {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 8.5pt;
+    line-height: 1.4;
+}
+
+.group-meta-card p {
+    margin: 0;
+}
+
+/* Matrix Table */
+.matrix-table-container {
+    flex: 1;
+    overflow-x: auto;
+    margin-bottom: 12px;
+}
+
+.matrix-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+}
+
+.matrix-table th,
+.matrix-table td {
+    border: 1px solid #9ca3af;
+    padding: 4px 6px;
+    text-align: center;
+}
+
+.matrix-table th {
+    background: #e5e7eb;
+    font-weight: 700;
+    color: #000;
+}
+
+.col-num { width: 25px; }
+.col-matricule { width: 75px; }
+.col-name { width: 160px; text-align: left !important; }
+.col-sessions-header { background: #f3f4f6 !important; }
+.col-totals-header { background: #e0f2fe !important; }
+
+.col-session-day {
+    min-width: 24px;
+    padding: 2px !important;
+}
+
+.sess-day {
+    display: block;
+    font-size: 8pt;
+    font-weight: 800;
+}
+
+.sess-time {
+    display: block;
+    font-size: 6pt;
+    color: #4b5563;
+}
+
+.col-stat {
+    width: 25px;
+    font-size: 7.5pt;
+}
+
+.th-absent { background: #ffe4e6 !important; color: #9f1239 !important; }
+.th-justified { background: #dcfce7 !important; color: #166534 !important; }
+.th-late { background: #fef3c7 !important; color: #92400e !important; }
+.th-rate { background: #e0f2fe !important; color: #075985 !important; }
+
+.cell-name {
+    text-align: left !important;
+    font-weight: 600;
+}
+
+.cell-code {
+    font-weight: 700;
+    font-size: 7.5pt;
+}
+
+.cell-present { color: #15803d; }
+.cell-absent { background: #fee2e2; color: #b91c1c; font-weight: 800; }
+.cell-justified { background: #dcfce7; color: #15803d; }
+.cell-late { background: #fef3c7; color: #b45309; }
+
+.stat-a { background: #fff1f2; font-weight: 700; color: #be123c; }
+.stat-aj { background: #f0fdf4; font-weight: 700; color: #15803d; }
+.stat-r { background: #fffbeb; font-weight: 700; color: #b45309; }
+.stat-rate { background: #f0f9ff; font-weight: 800; color: #0369a1; }
+
+.row-even { background: #fff; }
+.row-odd { background: #f9fafb; }
+
+/* Legend */
+.matrix-legend-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8pt;
+    padding: 6px 0;
+    border-top: 1px solid #d1d5db;
+    margin-bottom: 16px;
+}
+
+.legend-items {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.legend-pill {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 7.5pt;
+}
+
+.code-p { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.code-a { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.code-aj { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.code-r { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+
+.matrix-counters {
+    display: flex;
+    gap: 18px;
+}
+
+/* Signatures */
+.matrix-signatures-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    border-top: 1.5px solid #000;
+    padding-top: 8px;
+}
+
+.sig-block {
+    text-align: center;
+}
+
+.sig-title {
+    font-size: 8.5pt;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+    text-transform: uppercase;
+}
+
+.sig-subtitle {
+    font-size: 7pt;
+    color: #6b7280;
+    margin: 0 0 8px 0;
+}
+
+.sig-space {
+    height: 45px;
+    border: 1px dashed #d1d5db;
+    border-radius: 4px;
+}
+
+/* Print Setup */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 8mm;
+    }
+
+    body, .print-matrix-page {
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .matrix-sheet {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        page-break-after: avoid;
+    }
+
+    .matrix-table th,
+    .matrix-table td {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

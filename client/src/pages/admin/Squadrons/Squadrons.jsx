@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer, ArrowUpDown, LayoutGrid, Table as TableIcon, MapPin } from 'lucide-react';
-import { GroupModal, ConfirmationModal } from '../../../components/Modals';
+import { Search, Plus, BookOpen, Layers, Save, X, Filter, ChevronDown, Edit3, Trash2, CheckSquare, Square, Users, Hash, AlertCircle, Printer, ArrowUpDown, LayoutGrid, Table as TableIcon, MapPin, FileSpreadsheet } from 'lucide-react';
+import { GroupModal, ConfirmationModal, BulkImportModal } from '../../../components/Modals';
 import { useNotification } from '../../../hooks/useNotification';
 import { useTranslation } from 'react-i18next';
 import studentService from '../../../services/studentService';
@@ -17,6 +17,7 @@ const Squadrons = () => {
     const [groups, setGroups] = useState([]);
     const [formateurs, setFormateurs] = useState([]);
     const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [isBulkImportModalOpen, setIsBulkImportModalOpen] = useState(false);
     const [newGroup, setNewGroup] = useState({ id: '', filiereId: '', lead: [], année_scolaire: '2025/2026', salleIds: [] });
     const [flippedCardId, setFlippedCardId] = useState(null);
     const [editData, setEditData] = useState({ filiereId: '', lead: [], année_scolaire: '', salleIds: [] });
@@ -201,6 +202,14 @@ const Squadrons = () => {
                 </div>
 
                 <div className="squadrons-actions">
+                    <button 
+                        onClick={() => setIsBulkImportModalOpen(true)} 
+                        className="btn-ista px-8 py-4 flex items-center gap-3"
+                        style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none' }}
+                    >
+                        <FileSpreadsheet className="w-5 h-5" />
+                        <span>{isRtl ? 'استيراد إكسيل' : 'IMPORTER (EXCEL)'}</span>
+                    </button>
                     <button onClick={() => setIsRecreateModalOpen(true)} className="btn-ista px-8 py-4 flex items-center gap-3" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <AlertCircle className="w-5 h-5" style={{ color: 'var(--color-warning)' }} />
                         <span>{isRtl ? 'سنة دراسية جديدة' : 'NOUVELLE ANNÉE'}</span>
@@ -788,6 +797,15 @@ const Squadrons = () => {
                 onConfirm={handlePurgeGroup}
                 title="Suppression du Groupe"
                 message={`Êtes-vous sûr de vouloir supprimer le groupe ${purgeInfo.groupId}? Cette action supprimera également toutes les séances associées dans l'emploi du temps.`}
+            />
+
+            <BulkImportModal
+                isOpen={isBulkImportModalOpen}
+                onClose={() => setIsBulkImportModalOpen(false)}
+                onSuccess={() => {
+                    fetchData();
+                    addNotification('Importation des stagiaires effectuée avec succès.', 'success');
+                }}
             />
         </div>
     );

@@ -7,10 +7,11 @@ import {
     Trash2,
     Pencil,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    FileSpreadsheet
 } from 'lucide-react';
 import { useNotification } from '../../../hooks/useNotification';
-import { IdentityModal, ConfirmationModal } from '../../../components/Modals';
+import { IdentityModal, ConfirmationModal, BulkImportModal } from '../../../components/Modals';
 import { useTranslation } from 'react-i18next';
 import studentService from '../../../services/studentService';
 import './Accounts.css';
@@ -41,6 +42,7 @@ const Accounts = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState({ id: null, role: null });
@@ -226,6 +228,15 @@ const Accounts = () => {
                             </div>
                         )}
                     </div>
+
+                    <button
+                        onClick={() => setIsBulkImportOpen(true)}
+                        className="accounts-add-btn"
+                        style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}
+                    >
+                        <FileSpreadsheet className="accounts-add-icon" />
+                        <span className="accounts-add-text">Importer (Excel)</span>
+                    </button>
 
                     <button
                         onClick={() => { setIsEditing(false); setIsModalOpen(true); }}
@@ -491,6 +502,16 @@ const Accounts = () => {
                 onConfirm={handleDeleteUser}
                 title={t('accounts.delete_confirm_title')}
                 message={t('accounts.delete_confirm_message')}
+            />
+
+            <BulkImportModal
+                isOpen={isBulkImportOpen}
+                onClose={() => setIsBulkImportOpen(false)}
+                defaultGroupId={selectedGroup !== 'all' ? selectedGroup : ''}
+                onSuccess={() => {
+                    fetchData();
+                    addNotification('Importation des utilisateurs effectuée avec succès.', 'success');
+                }}
             />
         </div>
     );

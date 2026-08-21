@@ -63,3 +63,17 @@
         - [x] **Justify**: Mark absence as "Absent Justifié" (Equivalent to `PRESENT`).
         - [x] **Correct**: Change "Absent" back to **`PRESENT`** (Delete the entry).
         - [x] **Penalize**: Directly assign a "Blame" (`suivieDisipline`) while reviewing the absence.
+- [x] **🎓 Student Portal & Digital QR Badge**:
+    - [x] Create dedicated public student portal (`/student/portal`) with lookup by `NumInscription` / CEF.
+    - [x] Display real-time attendance rate gauge, total hours, breakdown of absences, discipline warnings, and group timetable.
+    - [x] Integrated official OFPPT digital ID card with downloadable (PNG) and printable live QR badge.
+    - [x] Online absence justification upload modal with medical / administrative certificate attachments.
+- [x] **📊 Advanced OFPPT Reports & Monthly Absence Matrix**:
+    - [x] Develop Monthly Attendance Matrix API and UI mapping daily presence/absence status (days 1-31).
+    - [x] Export official multi-group OFPPT Excel reports (`.xlsx`) with automated formulas and attendance percentages.
+    - [x] Official A4 Landscape printable OFPPT template (`/admin/print-monthly-matrix/:groupId`) with signature blocks for Formateur, Surveillance Générale, and Direction.
+- [x] **📥 Batch Multi-Group Excel Importer**:
+    - [x] Standardized OFPPT Excel template generator (`Modele_Import_Stagiaires_OFPPT.xlsx`).
+    - [x] Drag-and-drop Excel parser with pre-import validation and live table preview.
+    - [x] Automatic multi-group and multi-filière creation with background Python QR badge generation.
+

@@ -164,6 +164,38 @@ export const studentService = {
     reviewJustification: async (requestId, action) => {
         const response = await api.post('/admin/justify-review', { requestId, action });
         return response.data;
+    },
+
+    // Monthly Absence Matrix & Reports
+    getMonthlyMatrix: async (groupId, year, month) => {
+        const response = await api.get('/admin/reports/monthly-matrix', {
+            params: { groupId, year, month }
+        });
+        return response.data;
+    },
+
+    downloadMonthlyExcel: async (groupId, year, month) => {
+        const response = await api.get('/admin/reports/monthly-excel', {
+            params: { groupId, year, month },
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    downloadStudentTemplate: async () => {
+        const response = await api.get('/admin/template/students', {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    batchImportStudents: async (formData) => {
+        const response = await api.post('/admin/students/batch-import', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
     }
 };
 

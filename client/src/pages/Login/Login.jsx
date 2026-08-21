@@ -100,6 +100,34 @@ const Login = () => {
                             )}
                         </button>
                     </form>
+
+                    <div style={{
+                        marginTop: '20px',
+                        paddingTop: '16px',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        textAlign: 'center'
+                    }}>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/student/portal')}
+                            style={{
+                                background: 'rgba(14, 165, 233, 0.12)',
+                                border: '1px solid rgba(14, 165, 233, 0.25)',
+                                color: '#38bdf8',
+                                padding: '10px 16px',
+                                borderRadius: '10px',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            🎓 Vous êtes Stagiaire ? Accéder à votre Espace & Badge QR
+                        </button>
+                    </div>
                 </div>
 
                 <div className="login-footer">

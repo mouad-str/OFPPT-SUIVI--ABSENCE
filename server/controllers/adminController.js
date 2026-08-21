@@ -1753,3 +1753,418 @@ exports.importSchedule = async (req, res, next) => {
         next(err);
     }
 };
+
+// ==========================================
+// 📊 MONTHLY ABSENCE MATRIX & OFFICIAL REPORTS
+// ==========================================
+
+exports.getMonthlyAbsenceMatrix = async (req, res, next) => {
+    try {
+        const { groupId, year, month } = req.query;
+        if (!groupId || !year || !month) {
+            return res.status(400).json({ message: 'Paramètres groupId, year et month requis.' });
+        }
+
+        // 1. Fetch group details
+        const [[group]] = await pool.query(`
+            SELECT g.id, g.annee_scolaire, f.nom as filiere_nom
+            FROM groups g
+            LEFT JOIN filiere f ON g.filiereId = f.id
+            WHERE g.id = ?
+        `, [groupId]);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        // 2. Fetch all students in group
+        const [students] = await pool.query(`
+            SELECT NumInscription, name, Active, qr_path
+            FROM stagiaires
+            WHERE group_id = ?
+            ORDER BY name ASC
+        `, [groupId]);
+
+        // 3. Fetch reports in that month for this group
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+        const [reports] = await pool.query(`
+            SELECT r.id, r.report_code, DATE_FORMAT(r.date, '%Y-%m-%d') as date, r.subject, r.heure,
+                   f.name as formateur_name, s.nom as salle_name
+            FROM reports r
+            LEFT JOIN formateurs f ON r.formateur_id = f.id
+            LEFT JOIN salles s ON r.salleId = s.id
+            WHERE r.group_id = ? AND DATE_FORMAT(r.date, '%Y-%m') = ?
+            ORDER BY r.date ASC, r.heure ASC
+        `, [groupId, monthStr]);
+
+        const reportIds = reports.map(r => r.id);
+        let attendanceRows = [];
+        if (reportIds.length > 0) {
+            const [attRecords] = await pool.query(`
+                SELECT report_id, student_id, status, Justifier
+                FROM report_attendance
+                WHERE report_id IN (?)
+            `, [reportIds]);
+            attendanceRows = attRecords;
+        }
+
+        // 4. Build session list
+        const sessions = reports.map(r => ({
+            id: r.id,
+            code: r.report_code,
+            date: r.date,
+            dayNumber: parseInt(r.date.split('-')[2], 10),
+            subject: r.subject,
+            heure: r.heure,
+            formateur: r.formateur_name || 'N/A',
+            salle: r.salle_name || 'N/A'
+        }));
+
+        // 5. Build matrix for each student
+        const matrixStudents = students.map(st => {
+            const studentAttendance = {};
+            let absentCount = 0;
+            let justifiedCount = 0;
+            let lateCount = 0;
+
+            sessions.forEach(sess => {
+                const record = attendanceRows.find(a => a.report_id === sess.id && a.student_id === st.NumInscription);
+                if (!record) {
+                    studentAttendance[sess.id] = { status: 'P', label: 'Présent', code: 'P', color: 'success' };
+                } else if (record.status === 'ABSENT') {
+                    if (record.Justifier === 'JUSTIFIÉ') {
+                        justifiedCount++;
+                        studentAttendance[sess.id] = { status: 'AJ', label: 'Absent Justifié', code: 'AJ', color: 'info' };
+                    } else {
+                        absentCount++;
+                        studentAttendance[sess.id] = { status: 'A', label: 'Absent Non Justifié', code: 'A', color: 'danger' };
+                    }
+                } else if (record.status === 'LATE') {
+                    lateCount++;
+                    studentAttendance[sess.id] = { status: 'R', label: 'En Retard', code: 'R', color: 'warning' };
+                } else {
+                    studentAttendance[sess.id] = { status: 'P', label: 'Présent', code: 'P', color: 'success' };
+                }
+            });
+
+            const totalSessions = sessions.length;
+            const rate = totalSessions > 0
+                ? Math.max(0, Math.min(100, Math.round(((totalSessions - absentCount) / totalSessions) * 100)))
+                : 100;
+
+            return {
+                NumInscription: st.NumInscription,
+                name: st.name,
+                attendance: studentAttendance,
+                stats: {
+                    absent: absentCount,
+                    justified: justifiedCount,
+                    late: lateCount,
+                    present: totalSessions - (absentCount + justifiedCount),
+                    total_sessions: totalSessions,
+                    rate: rate
+                }
+            };
+        });
+
+        res.json({
+            group,
+            year,
+            month,
+            monthStr,
+            sessions,
+            students: matrixStudents,
+            totalStudents: students.length,
+            totalSessions: sessions.length
+        });
+    } catch (err) {
+        console.error("GET MONTHLY MATRIX ERROR:", err);
+        next(err);
+    }
+};
+
+exports.exportMonthlyExcelReport = async (req, res, next) => {
+    try {
+        const { groupId, year, month } = req.query;
+        if (!groupId || !year || !month) {
+            return res.status(400).json({ message: 'Paramètres groupId, year et month requis.' });
+        }
+
+        const [[group]] = await pool.query(`
+            SELECT g.id, g.annee_scolaire, f.nom as filiere_nom
+            FROM groups g
+            LEFT JOIN filiere f ON g.filiereId = f.id
+            WHERE g.id = ?
+        `, [groupId]);
+
+        if (!group) {
+            return res.status(404).json({ message: 'Groupe non trouvé.' });
+        }
+
+        const [students] = await pool.query(`
+            SELECT NumInscription, name FROM stagiaires WHERE group_id = ? ORDER BY name ASC
+        `, [groupId]);
+
+        const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+        const [reports] = await pool.query(`
+            SELECT r.id, DATE_FORMAT(r.date, '%Y-%m-%d') as date, r.subject, r.heure, f.name as formateur_name
+            FROM reports r
+            LEFT JOIN formateurs f ON r.formateur_id = f.id
+            WHERE r.group_id = ? AND DATE_FORMAT(r.date, '%Y-%m') = ?
+            ORDER BY r.date ASC, r.heure ASC
+        `, [groupId, monthStr]);
+
+        const reportIds = reports.map(r => r.id);
+        let attendanceRows = [];
+        if (reportIds.length > 0) {
+            const [attRecords] = await pool.query(`
+                SELECT report_id, student_id, status, Justifier FROM report_attendance WHERE report_id IN (?)
+            `, [reportIds]);
+            attendanceRows = attRecords;
+        }
+
+        // Build Excel Table Data
+        const excelRows = students.map((st, idx) => {
+            const row = {
+                "N°": idx + 1,
+                "Matricule": st.NumInscription,
+                "Nom et Prénom": st.name
+            };
+
+            let absentTotal = 0;
+            let justifiedTotal = 0;
+            let lateTotal = 0;
+
+            reports.forEach((rep, rIdx) => {
+                const colKey = `${rep.date} (${rep.heure || `S${rIdx + 1}`})`;
+                const rec = attendanceRows.find(a => a.report_id === rep.id && a.student_id === st.NumInscription);
+                if (!rec) {
+                    row[colKey] = 'P';
+                } else if (rec.status === 'ABSENT') {
+                    if (rec.Justifier === 'JUSTIFIÉ') {
+                        justifiedTotal++;
+                        row[colKey] = 'AJ';
+                    } else {
+                        absentTotal++;
+                        row[colKey] = 'A';
+                    }
+                } else if (rec.status === 'LATE') {
+                    lateTotal++;
+                    row[colKey] = 'R';
+                } else {
+                    row[colKey] = 'P';
+                }
+            });
+
+            const totalSessions = reports.length;
+            const rate = totalSessions > 0
+                ? Math.max(0, Math.min(100, Math.round(((totalSessions - absentTotal) / totalSessions) * 100)))
+                : 100;
+
+            row["Total Séances"] = totalSessions;
+            row["Absences Non Justifiées"] = absentTotal;
+            row["Absences Justifiées"] = justifiedTotal;
+            row["Retards"] = lateTotal;
+            row["Taux Assiduité (%)"] = `${rate}%`;
+
+            return row;
+        });
+
+        const wb = xlsx.utils.book_new();
+        const ws = xlsx.utils.json_to_sheet(excelRows);
+        xlsx.utils.book_append_sheet(wb, ws, `Absences_${groupId}`);
+
+        const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        const fileName = `Fiche_Absence_${groupId}_${monthStr}.xlsx`;
+
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buf);
+    } catch (err) {
+        console.error("EXPORT MONTHLY EXCEL ERROR:", err);
+        next(err);
+    }
+};
+
+// ==========================================
+// 📥 BATCH EXCEL IMPORTER & TEMPLATES
+// ==========================================
+
+exports.getImportTemplate = async (req, res, next) => {
+    try {
+        const wb = xlsx.utils.book_new();
+        const sampleData = [
+            {
+                "NumInscription": "STG2026001",
+                "Nom Complet": "ALAMI Mohammed",
+                "Filiere": "Developpement Digital",
+                "Groupe": "DEV101",
+                "Telephone": "0612345678",
+                "CIN": "JB123456"
+            },
+            {
+                "NumInscription": "STG2026002",
+                "Nom Complet": "BENANI Fatima",
+                "Filiere": "Developpement Digital",
+                "Groupe": "DEV101",
+                "Telephone": "0623456789",
+                "CIN": "JB234567"
+            },
+            {
+                "NumInscription": "STG2026003",
+                "Nom Complet": "TAHIRI Yassine",
+                "Filiere": "Infrastructure Digitale",
+                "Groupe": "ID101",
+                "Telephone": "0634567890",
+                "CIN": "JB345678"
+            },
+            {
+                "NumInscription": "STG2026004",
+                "Nom Complet": "CHRAIBI Salma",
+                "Filiere": "Gestion des Entreprises",
+                "Groupe": "GE101",
+                "Telephone": "0645678901",
+                "CIN": "JB456789"
+            }
+        ];
+        const ws = xlsx.utils.json_to_sheet(sampleData);
+        xlsx.utils.book_append_sheet(wb, ws, "Stagiaires_OFPPT");
+        const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Disposition', 'attachment; filename="Modele_Import_Stagiaires_OFPPT.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buf);
+    } catch (err) {
+        console.error("GET IMPORT TEMPLATE ERROR:", err);
+        next(err);
+    }
+};
+
+exports.importStudentsBatch = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Veuillez téléverser un fichier Excel (.xlsx ou .xls).' });
+        }
+
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet);
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ message: 'Le fichier Excel est vide.' });
+        }
+
+        const getRowValue = (row, possibleKeys) => {
+            const keys = Object.keys(row);
+            for (const key of keys) {
+                const cleanKey = key.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                for (const pk of possibleKeys) {
+                    const cleanPk = pk.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    if (cleanKey === cleanPk || cleanKey.includes(cleanPk)) {
+                        return row[key];
+                    }
+                }
+            }
+            return null;
+        };
+
+        // Cache filieres and groups
+        const [existingFilieres] = await pool.query('SELECT id, nom FROM filiere');
+        const filiereMap = new Map(existingFilieres.map(f => [f.nom.trim().toLowerCase(), f.id]));
+
+        const [existingGroups] = await pool.query('SELECT id, filiereId FROM groups');
+        const groupMap = new Map(existingGroups.map(g => [g.id.trim().toUpperCase(), g]));
+
+        let insertedCount = 0;
+        let updatedCount = 0;
+        let errors = [];
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowIndex = i + 2;
+
+            let numInsc = getRowValue(row, ['numinscription', 'matricule', 'cin', 'id', 'num', 'code']);
+            let name = getRowValue(row, ['nom complet', 'nom', 'name', 'stagiaire', 'fullname', 'prenom']);
+            let filiereName = getRowValue(row, ['filiere', 'branche', 'formation', 'option']);
+            let groupName = getRowValue(row, ['groupe', 'group', 'classe', 'division', 'section']);
+
+            if (!name) {
+                errors.push(`Ligne ${rowIndex} ignorée: Nom du stagiaire manquant`);
+                continue;
+            }
+
+            if (!numInsc) {
+                numInsc = 'STG' + Date.now().toString().slice(-6) + Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            } else {
+                numInsc = String(numInsc).trim().toUpperCase();
+            }
+
+            name = String(name).trim();
+            groupName = groupName ? String(groupName).trim().toUpperCase() : (req.body.defaultGroupId || 'GROUPE-A');
+            filiereName = filiereName ? String(filiereName).trim() : 'Formation Générale';
+
+            // Resolve or create filiere
+            let filiereId = filiereMap.get(filiereName.toLowerCase());
+            if (!filiereId) {
+                const [fRes] = await pool.query('INSERT INTO filiere (nom) VALUES (?)', [filiereName]);
+                filiereId = fRes.insertId;
+                filiereMap.set(filiereName.toLowerCase(), filiereId);
+            }
+
+            // Resolve or create group
+            if (!groupMap.has(groupName)) {
+                await pool.query('INSERT INTO groups (id, filiereId, annee_scolaire) VALUES (?, ?, ?)', [groupName, filiereId, '2025/2026']);
+                groupMap.set(groupName, { id: groupName, filiereId });
+            }
+
+            // Insert or update stagiaire
+            const [existing] = await pool.query('SELECT NumInscription FROM stagiaires WHERE NumInscription = ?', [numInsc]);
+
+            const safeName = name.replace(/ /g, '_').toUpperCase();
+            const qrRelativePath = `/uploads/Qr_Id/${groupName.replace(/ /g, '_')}/QR_${safeName}.png`;
+
+            if (existing.length > 0) {
+                await pool.query(`
+                    UPDATE stagiaires 
+                    SET name = ?, group_id = ?, filiereId = ?, qr_path = ?
+                    WHERE NumInscription = ?
+                `, [name, groupName, filiereId, qrRelativePath, numInsc]);
+                updatedCount++;
+            } else {
+                await pool.query(`
+                    INSERT INTO stagiaires (NumInscription, name, group_id, filiereId, Active, qr_path)
+                    VALUES (?, ?, ?, ?, 1, ?)
+                `, [numInsc, name, groupName, filiereId, qrRelativePath]);
+                insertedCount++;
+            }
+
+            // Trigger QR Code generation via Python in background
+            try {
+                const payload = JSON.stringify({
+                    Name: name,
+                    Group: groupName,
+                    Institute: "OFPPT ISTA Mirleft",
+                    Year: "2025/2026",
+                    Profession: "stagiaire"
+                });
+                const pyProc = spawn('python', [path.join(__dirname, '../generate_qr.py'), payload]);
+                pyProc.on('error', (err) => console.warn(`Python spawn error for ${name}:`, err.message));
+            } catch (qrErr) {
+                console.warn(`QR generation background error for ${name}:`, qrErr.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: `Importation terminée avec succès: ${insertedCount} stagiaires ajoutés, ${updatedCount} mis à jour.`,
+            insertedCount,
+            updatedCount,
+            totalProcessed: data.length,
+            errors
+        });
+    } catch (err) {
+        console.error("BATCH IMPORT ERROR:", err);
+        next(err);
+    }
+};

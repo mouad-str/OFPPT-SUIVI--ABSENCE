@@ -24,6 +24,7 @@ import AdminJustifications from '../pages/admin/Justifications/Justifications';
 import PrintBlame from '../pages/admin/PrintTemplates/PrintBlame';
 import PrintAttendance from '../pages/admin/PrintTemplates/PrintAttendance';
 import PrintBadges from '../pages/admin/PrintTemplates/PrintBadges';
+import PrintMonthlyMatrix from '../pages/admin/PrintTemplates/PrintMonthlyMatrix';
 import Timetable from '../pages/admin/Timetable/Timetable';
 
 // Formateur Pages
@@ -34,6 +35,8 @@ import ForceUpdatePassword from '../pages/formateur/ForceUpdatePassword/ForceUpd
 
 // Student Pages
 import Justify from '../pages/student/Justify/Justify';
+import StudentPortal from '../pages/student/StudentPortal/StudentPortal';
+
 
 const ProtectedRoute = ({ children, roles }) => {
     const { user, loading, skipPasswordUpdate } = useAuth();
@@ -85,6 +88,8 @@ export const AppRoutes = () => {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/student/portal" element={<StudentPortal />} />
+            <Route path="/student" element={<StudentPortal />} />
             <Route path="/student/justify" element={<Justify />} />
             <Route
                 path="/scanner"
@@ -106,17 +111,6 @@ export const AppRoutes = () => {
 
             <Route
                 path="/admin/student/:id"
-                element={
-                    <ProtectedRoute roles={['admin', 'formateur']}>
-                        <DashboardLayout>
-                            <StudentProfile />
-                        </DashboardLayout>
-                    </ProtectedRoute>
-                }
-            />
-
-            <Route
-                path="/student/:id"
                 element={
                     <ProtectedRoute roles={['admin', 'formateur']}>
                         <DashboardLayout>
@@ -149,6 +143,15 @@ export const AppRoutes = () => {
                 element={
                     <ProtectedRoute roles={['admin']}>
                         <PrintBadges />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/admin/print-monthly-matrix/:groupId"
+                element={
+                    <ProtectedRoute roles={['admin']}>
+                        <PrintMonthlyMatrix />
                     </ProtectedRoute>
                 }
             />

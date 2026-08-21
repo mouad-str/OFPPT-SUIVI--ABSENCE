@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, FileText, Download, AlertTriangle, ChevronDown, CheckSquare, Square } from 'lucide-react';
+import { Search, FileText, Download, AlertTriangle, ChevronDown, CheckSquare, Square, Calendar, Printer, FileSpreadsheet, X, Eye } from 'lucide-react';
 import { CustomDatePicker } from '../../../components/Forms';
 import { RapportModal } from '../../../components/Modals';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,21 @@ import studentService from '../../../services/studentService';
 import reportService from '../../../services/reportService';
 import './Rapports.css';
 import '../../../styles/admin-shared.css';
+
+const MONTHS_LIST = [
+    { value: 1, label: '01 - Janvier' },
+    { value: 2, label: '02 - Février' },
+    { value: 3, label: '03 - Mars' },
+    { value: 4, label: '04 - Avril' },
+    { value: 5, label: '05 - Mai' },
+    { value: 6, label: '06 - Juin' },
+    { value: 7, label: '07 - Juillet' },
+    { value: 8, label: '08 - Août' },
+    { value: 9, label: '09 - Septembre' },
+    { value: 10, label: '10 - Octobre' },
+    { value: 11, label: '11 - Novembre' },
+    { value: 12, label: '12 - Décembre' }
+];
 
 const Rapports = () => {
     const { t, i18n } = useTranslation();
@@ -25,6 +40,58 @@ const Rapports = () => {
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [allReports, setAllReports] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // 📊 Monthly Matrix & Official OFPPT Sheets Modal
+    const [isMonthlyModalOpen, setIsMonthlyModalOpen] = useState(false);
+    const [monthlyGroup, setMonthlyGroup] = useState('');
+    const [monthlyYear, setMonthlyYear] = useState(new Date().getFullYear());
+    const [monthlyMonth, setMonthlyMonth] = useState(new Date().getMonth() + 1);
+    const [monthlyLoading, setMonthlyLoading] = useState(false);
+    const [monthlyMatrixData, setMonthlyMatrixData] = useState(null);
+    const [monthlyError, setMonthlyError] = useState('');
+
+    useEffect(() => {
+        if (availableGroups.length > 0 && !monthlyGroup) {
+            setMonthlyGroup(availableGroups[0].id);
+        }
+    }, [availableGroups]);
+
+    const handleFetchMonthlyMatrix = async () => {
+        if (!monthlyGroup) return;
+        setMonthlyLoading(true);
+        setMonthlyError('');
+        try {
+            const data = await studentService.getMonthlyMatrix(monthlyGroup, monthlyYear, monthlyMonth);
+            setMonthlyMatrixData(data);
+        } catch (err) {
+            setMonthlyError(err.response?.data?.message || 'Erreur lors du chargement de la matrice.');
+            setMonthlyMatrixData(null);
+        } finally {
+            setMonthlyLoading(false);
+        }
+    };
+
+    const handleDownloadExcelMatrix = async () => {
+        if (!monthlyGroup) return;
+        try {
+            const blob = await studentService.downloadMonthlyExcel(monthlyGroup, monthlyYear, monthlyMonth);
+            const url = window.URL.createObjectURL(new Blob([blob]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Fiche_Absence_${monthlyGroup}_${monthlyYear}_M${monthlyMonth}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error('Download excel error', err);
+            alert('Erreur lors du téléchargement du fichier Excel.');
+        }
+    };
+
+    const handleOpenPrintMatrix = () => {
+        if (!monthlyGroup) return;
+        window.open(`/admin/print-monthly-matrix/${monthlyGroup}?year=${monthlyYear}&month=${monthlyMonth}`, '_blank');
+    };
 
     useEffect(() => {
         const fetchGroups = async () => {
@@ -257,6 +324,31 @@ const Rapports = () => {
                         onChange={setSelectedDate}
                         placeholder={t('reports.filter_date')}
                     />
+
+                    <button
+                        onClick={() => {
+                            setIsMonthlyModalOpen(true);
+                            if (monthlyGroup) handleFetchMonthlyMatrix();
+                        }}
+                        className="btn-ista btn-monthly-matrix"
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                            color: '#ffffff',
+                            padding: '10px 16px',
+                            borderRadius: '10px',
+                            fontWeight: '600',
+                            fontSize: '0.85rem',
+                            border: 'none',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                        }}
+                    >
+                        <Calendar size={16} />
+                        <span>Fiche Mensuelle d'Assiduité</span>
+                    </button>
                     
                     <div className="rapports-export-wrapper">
                         <button
@@ -500,6 +592,239 @@ const Rapports = () => {
                     </div>
                 )})}
             </div>
+
+            {/* ========================================================= */}
+            {/* 📊 MODAL : FICHE MENSUELLE D'ASSIDUITÉ & MATRICE D'ABSENCES */}
+            {/* ========================================================= */}
+            {isMonthlyModalOpen && (
+                <div className="st-modal-overlay fade-in" style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 120,
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: '#1e293b',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '20px',
+                        width: '100%',
+                        maxWidth: '680px',
+                        boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
+                        color: '#f8fafc',
+                        overflow: 'hidden'
+                    }}>
+                        {/* Modal Header */}
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '20px 24px',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                            background: 'rgba(15, 23, 42, 0.6)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <Calendar size={22} color="#38bdf8" />
+                                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
+                                    Fiche Mensuelle d'Assiduité (Format Officiel)
+                                </h3>
+                            </div>
+                            <button 
+                                onClick={() => setIsMonthlyModalOpen(false)}
+                                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div style={{ padding: '24px' }}>
+                            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '20px' }}>
+                                Sélectionnez le groupe et le mois pour générer la grille complète des présences/absences (jours 1 à 31) avec calcul automatique des pourcentages et bilans.
+                            </p>
+
+                            {/* Filters row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.2fr 1fr', gap: '14px', marginBottom: '20px' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                                        Groupe :
+                                    </label>
+                                    <select
+                                        value={monthlyGroup}
+                                        onChange={(e) => {
+                                            setMonthlyGroup(e.target.value);
+                                        }}
+                                        style={{
+                                            width: '100%',
+                                            background: '#0f172a',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            color: '#fff',
+                                            borderRadius: '10px',
+                                            padding: '10px 12px',
+                                            fontSize: '0.9rem',
+                                            outline: 'none'
+                                        }}
+                                    >
+                                        {availableGroups.map((g) => (
+                                            <option key={g.id} value={g.id}>{g.id}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                                        Mois :
+                                    </label>
+                                    <select
+                                        value={monthlyMonth}
+                                        onChange={(e) => setMonthlyMonth(Number(e.target.value))}
+                                        style={{
+                                            width: '100%',
+                                            background: '#0f172a',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            color: '#fff',
+                                            borderRadius: '10px',
+                                            padding: '10px 12px',
+                                            fontSize: '0.9rem',
+                                            outline: 'none'
+                                        }}
+                                    >
+                                        {MONTHS_LIST.map((m) => (
+                                            <option key={m.value} value={m.value}>{m.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                                        Année :
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={monthlyYear}
+                                        onChange={(e) => setMonthlyYear(Number(e.target.value))}
+                                        style={{
+                                            width: '100%',
+                                            background: '#0f172a',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            color: '#fff',
+                                            borderRadius: '10px',
+                                            padding: '10px 12px',
+                                            fontSize: '0.9rem',
+                                            outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Action to preview */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <button
+                                    onClick={handleFetchMonthlyMatrix}
+                                    disabled={monthlyLoading}
+                                    style={{
+                                        background: 'rgba(255, 255, 255, 0.08)',
+                                        color: '#e2e8f0',
+                                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    <Eye size={15} /> {monthlyLoading ? 'Calcul des données...' : 'Actualiser / Prévisualiser la période'}
+                                </button>
+                            </div>
+
+                            {monthlyError && (
+                                <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#fda4af', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                                    {monthlyError}
+                                </div>
+                            )}
+
+                            {monthlyMatrixData && (
+                                <div style={{
+                                    background: 'rgba(15, 23, 42, 0.6)',
+                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    borderRadius: '14px',
+                                    padding: '16px',
+                                    marginBottom: '20px'
+                                }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', textAlign: 'center' }}>
+                                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Stagiaires Inscrits</span>
+                                            <strong style={{ fontSize: '1.3rem', color: '#38bdf8' }}>{monthlyMatrixData.totalStudents}</strong>
+                                        </div>
+                                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Séances Enregistrées</span>
+                                            <strong style={{ fontSize: '1.3rem', color: '#34d399' }}>{monthlyMatrixData.totalSessions}</strong>
+                                        </div>
+                                        <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '10px', borderRadius: '10px' }}>
+                                            <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Période</span>
+                                            <strong style={{ fontSize: '0.95rem', color: '#fbbf24' }}>{monthlyMatrixData.monthStr}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Export Buttons */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <button
+                                    onClick={handleDownloadExcelMatrix}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                                        color: '#fff',
+                                        border: 'none',
+                                        padding: '14px',
+                                        borderRadius: '12px',
+                                        fontWeight: '700',
+                                        fontSize: '0.95rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        boxShadow: '0 4px 16px rgba(16, 185, 129, 0.3)'
+                                    }}
+                                >
+                                    <FileSpreadsheet size={18} />
+                                    Exporter en Excel (.xlsx)
+                                </button>
+
+                                <button
+                                    onClick={handleOpenPrintMatrix}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                                        color: '#fff',
+                                        border: 'none',
+                                        padding: '14px',
+                                        borderRadius: '12px',
+                                        fontWeight: '700',
+                                        fontSize: '0.95rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '8px',
+                                        boxShadow: '0 4px 16px rgba(37, 99, 235, 0.3)'
+                                    }}
+                                >
+                                    <Printer size={18} />
+                                    Imprimer Fiche (A4 Paysage)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

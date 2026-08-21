@@ -7,3 +7,5 @@ export { default as IdentityModal } from './IdentityModal';
 export { default as PenaltyModal } from './PenaltyModal';
 export { default as RapportModal } from './RapportModal';
 export { default as SeanceDossierModal } from './SeanceDossierModal';
+export { default as BulkImportModal } from './BulkImportModal/BulkImportModal';
+
