@@ -535,3 +535,140 @@
     cursor: pointer;
     margin: 0.5rem;
 }
+
+/* ==========================================
+   ⚡ FAST SCANNING & AUDIO/FLASH ENHANCEMENTS
+   ========================================== */
+
+/* Flash Effects */
+.scn-flash-success {
+    box-shadow: inset 0 0 0 8px #10b981, 0 0 50px rgba(16, 185, 129, 0.4) !important;
+    transition: box-shadow 0.15s ease-out;
+}
+
+.scn-flash-warning {
+    box-shadow: inset 0 0 0 8px #f59e0b, 0 0 50px rgba(245, 158, 11, 0.4) !important;
+    transition: box-shadow 0.15s ease-out;
+}
+
+.scn-flash-error {
+    box-shadow: inset 0 0 0 8px #ef4444, 0 0 50px rgba(239, 68, 68, 0.4) !important;
+    transition: box-shadow 0.15s ease-out;
+}
+
+/* Sound Button */
+.scn-btn-sound {
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.scn-btn-sound:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.scn-btn-sound.muted {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Header Tags */
+.scn-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.scn-badge-pill {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.08em;
+}
+
+.scn-fast-mode-pill {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.08em;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Presence Stats & Progress Bar */
+.scn-presence-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scn-rate-pill {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    font-weight: 800;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.scn-progress-wrapper {
+    width: 100%;
+    height: 5px;
+    background-color: #0f172a;
+    overflow: hidden;
+}
+
+.scn-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0284c7, #10b981);
+    transition: width 0.4s ease-out;
+}
+
+/* Table Enhancements */
+.table-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.table-auto-save-tag {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.scn-tr.tr-present {
+    background-color: rgba(16, 185, 129, 0.04);
+}
+
+.scn-tr.tr-present:hover {
+    background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+.scn-tr.tr-absent {
+    opacity: 0.85;
+}
+
+.scn-scan-result-time {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+

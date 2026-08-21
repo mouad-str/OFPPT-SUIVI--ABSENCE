@@ -76,4 +76,12 @@
     - [x] Standardized OFPPT Excel template generator (`Modele_Import_Stagiaires_OFPPT.xlsx`).
     - [x] Drag-and-drop Excel parser with pre-import validation and live table preview.
     - [x] Automatic multi-group and multi-filière creation with background Python QR badge generation.
+- [x] **🌱 One-Click Demo Database Seeder (`npm run seed`)**:
+    - [x] Complete seeder script (`server/scripts/seed.js`) generating realistic OFPPT filières, salles, groups, formateurs, 30+ students, and past session reports.
+- [x] **📱 Enhanced Scanner UX & Web Audio Feedback**:
+    - [x] Native Web Audio API synthesizer chimes (`playSuccessChime`, `playWarningBeep`, `playErrorBuzzer`) with mute toggle.
+    - [x] Continuous fast-scan mode with reduced debounce for classroom queue flow.
+    - [x] Full-screen visual edge micro-flash (emerald/amber/red).
+    - [x] Real-time live presence progress gauge with instant manual toggle.
+
 
